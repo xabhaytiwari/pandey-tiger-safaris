@@ -60,12 +60,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`dark scroll-smooth ${inter.variable}`}>
       <head>
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://bandhavgarhtigerreserve.org" />
+        <link rel="dns-prefetch" href="https://bandhavgarhtigerreserve.org" />
+        <link rel="preconnect" href="https://checkout.razorpay.com" />
+        <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+        <link rel="preconnect" href="https://firestore.googleapis.com" />
+        <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`${inter.className} bg-black text-zinc-100 antialiased selection:bg-orange-500 selection:text-black overflow-x-hidden`}>
+      <body className={`${inter.className} bg-black text-zinc-100 antialiased selection:bg-orange-500 selection:text-black overflow-x-hidden transform-gpu`}>
         <ScrollProgress />
         <CursorGlow />
         <Navbar />
