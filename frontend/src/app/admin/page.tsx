@@ -8,7 +8,7 @@ import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firest
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, CheckCircle2, LogOut, Calendar as CalendarIcon, User, Mail, Phone, 
-  PlusCircle, Tag, X, FileText, Package, UserCheck, Star, MapPin, ChevronLeft, ChevronRight
+  PlusCircle, Upload, Tag, X, FileText, Package, UserCheck, Star, MapPin, ChevronLeft, ChevronRight, ImageIcon
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -52,12 +52,12 @@ export default function AdminDashboard() {
     image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
   });
 
-  // Add Driver Form State
+  // Add Driver Form State (File Upload Base64)
   const [driverForm, setDriverForm] = useState({
     name: "",
     experience_years: 10,
     rating: 4.9,
-    photo_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400"
+    photo_base64: ""
   });
 
   // Offline Booking Form State
@@ -191,13 +191,38 @@ export default function AdminDashboard() {
     }
   };
 
+  // Convert Uploaded Driver Photo to Base64
+  const handleDriverPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDriverForm(prev => ({ ...prev, photo_base64: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Create New Driver
   const handleCreateDriver = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, "drivers"), { ...driverForm, createdAt: serverTimestamp() });
+      await addDoc(collection(db, "drivers"), {
+        name: driverForm.name,
+        experience_years: driverForm.experience_years,
+        rating: driverForm.rating,
+        photo_url: driverForm.photo_base64,
+        createdAt: serverTimestamp(),
+      });
       setIsDriverModalOpen(false);
+      setDriverForm({
+        name: "",
+        experience_years: 10,
+        rating: 4.9,
+        photo_base64: ""
+      });
     } catch (err) {
-      console.error(err);
+      console.error("Error creating driver:", err);
     }
   };
 
@@ -220,7 +245,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // 365-Day Calendar Month View Generator
   const getMonthCalendarDates = () => {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() + calendarMonthOffset);
@@ -414,6 +438,30 @@ export default function AdminDashboard() {
             </div>
           </section>
 
+          {/* Published Drivers Management View */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-orange-500" /> Active Drivers ({driversList.length})
+            </h2>
+
+            {driversList.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No drivers registered yet. Click &quot;+ Add Driver&quot; to upload driver photo & details.</p>
+            ) : (
+              <div className="grid md:grid-cols-3 gap-4">
+                {driversList.map((d) => (
+                  <div key={d.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex items-center gap-4 text-xs">
+                    <img src={d.photo_url || d.photo_base64} alt={d.name} className="w-16 h-16 object-cover rounded-full border border-orange-500/30" />
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{d.name}</h4>
+                      <p className="text-zinc-400">{d.experience_years} Years Experience</p>
+                      <p className="text-orange-400 flex items-center gap-1 font-bold"><Star className="w-3 h-3 fill-orange-400" /> {d.rating} Rating</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           {/* Published Packages */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -554,7 +602,7 @@ export default function AdminDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Add Driver Modal */}
+      {/* Add Driver Modal with File Upload */}
       <AnimatePresence>
         {isDriverModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
@@ -574,9 +622,23 @@ export default function AdminDashboard() {
                   <input type="number" step="0.1" max="5.0" placeholder="Rating" required value={driverForm.rating} onChange={(e) => setDriverForm({...driverForm, rating: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
                 </div>
 
-                <input type="url" placeholder="Driver Photo URL" required value={driverForm.photo_url} onChange={(e) => setDriverForm({...driverForm, photo_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                {/* Driver Photo File Uploader */}
+                <div className="border border-dashed border-white/20 p-4 rounded-xl text-center space-y-2">
+                  <Upload className="w-6 h-6 text-orange-500 mx-auto" />
+                  <p className="text-zinc-300 font-semibold">Upload Driver Photo</p>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    required 
+                    onChange={handleDriverPhotoUpload} 
+                    className="block w-full text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:bg-orange-500 file:text-black file:font-bold hover:file:bg-orange-400 cursor-pointer" 
+                  />
+                  {driverForm.photo_base64 && (
+                    <img src={driverForm.photo_base64} alt="Driver Preview" className="w-20 h-20 object-cover mx-auto rounded-full border border-orange-500/50 mt-2" />
+                  )}
+                </div>
 
-                <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all">
+                <button type="submit" disabled={!driverForm.photo_base64} className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all disabled:opacity-50">
                   Register Driver
                 </button>
               </form>
