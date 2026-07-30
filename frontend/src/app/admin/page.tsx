@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Lock, Key, Phone, Calendar, User, Mail, CheckCircle2, LogOut } from "lucide-react";
+import { motion } from "framer-motion";
+import { Shield, CheckCircle2, LogOut, Calendar, User, Mail, Phone } from "lucide-react";
 
 export default function AdminDashboard() {
   const [authStep, setAuthStep] = useState<"login" | "2fa" | "authenticated">("login");
@@ -21,7 +21,6 @@ export default function AdminDashboard() {
   const [customReqs, setCustomReqs] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // Check existing session
   useEffect(() => {
     const isAuthed = sessionStorage.getItem("admin_authed");
     if (isAuthed === "true") {
@@ -45,20 +44,15 @@ export default function AdminDashboard() {
     }
   };
 
-  // Step 1: Handle Strict Username & Password
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Strict Credentials Check
     if (username === "dinesh_pandey" && password === "PandeyTiger@2026#") {
       setLoading(true);
-
-      // Generate 6-digit random 2FA OTP
       const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
       setGeneratedOtp(newOtp);
 
-      // Trigger OTP dispatch to singhabhaytiwari@gmail.com
       try {
         await fetch("/api/admin/send-otp", {
           method: "POST",
@@ -67,7 +61,7 @@ export default function AdminDashboard() {
         });
         setAuthStep("2fa");
       } catch (err) {
-        setError("Failed to dispatch 2FA email");
+        setError("Failed to trigger 2FA email");
       } finally {
         setLoading(false);
       }
@@ -76,7 +70,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Step 2: Handle 2FA Verification
   const handleVerify2FA = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -86,7 +79,7 @@ export default function AdminDashboard() {
       setAuthStep("authenticated");
       fetchData();
     } else {
-      setError("Incorrect 2FA Code. Check singhabhaytiwari@gmail.com");
+      setError("Incorrect 2FA Code. Please try again.");
     }
   };
 
@@ -100,7 +93,6 @@ export default function AdminDashboard() {
 
   return (
     <main className="min-h-screen max-w-6xl mx-auto px-6 py-12">
-      {/* 1. Login & 2FA Gatekeepers */}
       {authStep !== "authenticated" && (
         <div className="flex items-center justify-center min-h-[70vh]">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-zinc-900/60 border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl backdrop-blur-2xl space-y-6 text-white">
@@ -139,7 +131,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <button type="submit" disabled={loading} className="w-full bg-white text-black font-bold py-3.5 rounded-xl transition-all text-sm hover:bg-zinc-200 disabled:opacity-50">
-                  {loading ? "Authenticating & Dispatching 2FA..." : "Sign In to Admin"}
+                  {loading ? "Authenticating..." : "Sign In to Admin"}
                 </button>
               </form>
             )}
@@ -147,8 +139,14 @@ export default function AdminDashboard() {
             {authStep === "2fa" && (
               <form onSubmit={handleVerify2FA} className="space-y-4">
                 <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs text-amber-300">
-                  2FA Verification Code sent to: <strong className="text-white block mt-0.5">singhabhaytiwari@gmail.com</strong>
+                  2FA Code sent to: <strong className="text-white block mt-0.5">singhabhaytiwari@gmail.com</strong>
                 </div>
+
+                {/* Dev Helper Badge (Shows generated code directly) */}
+                <div className="bg-zinc-800/80 border border-white/10 p-3 rounded-xl text-center text-xs text-zinc-300 font-mono">
+                  🔑 2FA Code: <span className="text-amber-400 font-bold tracking-widest text-sm">{generatedOtp}</span>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Enter 6-Digit 2FA Code</label>
                   <input
@@ -170,7 +168,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* 2. Authenticated Dashboard View */}
       {authStep === "authenticated" && (
         <div className="space-y-12">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6">
@@ -195,7 +192,6 @@ export default function AdminDashboard() {
             <div className="text-center py-12 text-zinc-500">Loading Cloud Firestore records...</div>
           ) : (
             <div className="space-y-12">
-              {/* Standard Bookings */}
               <section className="space-y-4">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-amber-400" /> Standard Bookings ({bookings.length})
@@ -219,7 +215,6 @@ export default function AdminDashboard() {
                 )}
               </section>
 
-              {/* Custom Package Requests */}
               <section className="space-y-4">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <Phone className="w-5 h-5 text-amber-400" /> Custom Safari Requests ({customReqs.length})

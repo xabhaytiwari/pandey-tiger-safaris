@@ -4,35 +4,37 @@ export async function POST(req: Request) {
   try {
     const { otp } = await req.json();
     const targetEmail = "singhabhaytiwari@gmail.com";
+    const resendApiKey = process.env.RESEND_API_KEY;
 
-    // EmailJS / Web Mailer Integration
-    const emailJsServiceId = process.env.EMAILJS_SERVICE_ID;
-    const emailJsTemplateId = process.env.EMAILJS_TEMPLATE_ID;
-    const emailJsPublicKey = process.env.EMAILJS_PUBLIC_KEY;
-
-    if (emailJsServiceId && emailJsTemplateId && emailJsPublicKey) {
-      await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+    if (resendApiKey) {
+      await fetch("https://api.resend.com/emails", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          service_id: emailJsServiceId,
-          template_id: emailJsTemplateId,
-          user_id: emailJsPublicKey,
-          template_params: {
-            to_email: targetEmail,
-            otp: otp,
-            site_name: "Pandey Tiger Safaris Admin"
-          },
+          from: "Pandey Tiger Safaris <onboarding@resend.dev>",
+          to: [targetEmail],
+          subject: `Admin 2FA Security OTP Code: ${otp}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 24px; background-color: #09090b; color: #ffffff; border-radius: 12px; max-width: 500px; border: 1px solid #27272a;">
+              <h2 style="color: #f59e0b; margin-top: 0;">Pandey Tiger Safaris Admin</h2>
+              <p style="color: #a1a1aa; font-size: 14px;">Your 2FA Verification Code to unlock the Owner Dashboard is:</p>
+              <div style="background-color: #18181b; border: 1px solid #3f3f46; border-radius: 8px; padding: 16px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #f59e0b; font-family: monospace;">${otp}</span>
+              </div>
+              <p style="color: #71717a; font-size: 12px;">Sent to: ${targetEmail}</p>
+            </div>
+          `,
         }),
       });
     }
 
-    console.log(`[2FA SECURITY ALERT] OTP Code ${otp} generated for ${targetEmail}`);
-
     return NextResponse.json({
       success: true,
       message: `2FA OTP dispatched to ${targetEmail}`,
-      sentTo: targetEmail
+      otp: otp // Included for testing
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
