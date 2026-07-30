@@ -65,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`${inter.className} bg-black text-zinc-100 antialiased selection:bg-orange-500 selection:text-black overflow-x-hidden transform-gpu`}>
+      <body className={`${inter.className} bg-black text-zinc-100 antialiased selection:bg-orange-500 selection:text-black overflow-x-hidden`}>
         <ScrollProgress />
         <CursorGlow />
         <Navbar />

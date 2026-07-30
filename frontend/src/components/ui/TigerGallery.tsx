@@ -68,7 +68,6 @@ export default function TigerGallery() {
     setMounted(true);
   }, []);
 
-  // Lock background scroll when modal is active
   useEffect(() => {
     if (activeLightBox) {
       document.body.style.overflow = "hidden";
@@ -96,7 +95,6 @@ export default function TigerGallery() {
         <p className="text-zinc-400 text-sm max-w-2xl mx-auto font-light">Explore high-definition tiger sightings across MP reserves. Click any photo to book a safari for that park.</p>
       </div>
 
-      {/* Park Filter Tabs */}
       <div className="flex flex-wrap justify-center gap-2">
         {parks.map(park => (
           <button
@@ -116,7 +114,6 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* Photo Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPhotos.map((photo) => (
           <motion.div
@@ -155,18 +152,17 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* React Portal Lightbox: Renders directly into document.body to break free from parent CSS transforms */}
+      {/* Viewport-Locked Modal Rendered at document.body */}
       {mounted && activeLightBox && createPortal(
         <AnimatePresence mode="wait">
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
+          <div className="fixed top-0 left-0 w-screen h-[100dvh] z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 overflow-hidden">
             <motion.div 
               initial={{ opacity: 0, scale: 0.92 }} 
               animate={{ opacity: 1, scale: 1 }} 
               exit={{ opacity: 0, scale: 0.92 }} 
               transition={{ type: "spring", stiffness: 450, damping: 30 }}
-              className="relative max-w-2xl w-full max-h-[85vh] bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between"
+              className="relative max-w-2xl w-full bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between"
             >
-              {/* Close Button */}
               <button 
                 onClick={() => {
                   triggerHaptic(10);
@@ -177,7 +173,6 @@ export default function TigerGallery() {
                 <X className="w-5 h-5" />
               </button>
 
-              {/* Compact Image */}
               <div className="relative h-[220px] sm:h-[280px] md:h-[320px] w-full bg-black overflow-hidden flex-shrink-0">
                 <img 
                   src={activeLightBox.image_url} 
@@ -187,7 +182,6 @@ export default function TigerGallery() {
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
               </div>
 
-              {/* Content Box */}
               <div className="p-5 md:p-6 space-y-3 bg-zinc-950 text-white z-20">
                 <div className="flex flex-wrap justify-between items-center gap-2">
                   <span className="text-[10px] uppercase font-extrabold text-black bg-orange-500 px-2.5 py-0.5 rounded-full tracking-wider">
