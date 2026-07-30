@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { db, auth, onAuthStateChanged } from "../../lib/firebase";
 import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { getExifGPS, findNearestPark } from "../../lib/exif";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Sparkles, PlusCircle, Compass, X, Lock, LogIn, CheckCircle2, Flame } from "lucide-react";
+import { MapPin, Sparkles, X, CheckCircle2, Flame, Upload, Camera, Navigation } from "lucide-react";
 import { triggerHaptic } from "../../lib/sound";
 import AuthModal from "../auth/AuthModal";
 
@@ -28,12 +29,15 @@ export default function SightingMap() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  // Sighting Modal Form
+  // Sighting Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLatLng, setSelectedLatLng] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsDetected, setGpsDetected] = useState(false);
+  const [sightingPhotoBase64, setSightingPhotoBase64] = useState<string>("");
+
   const [sightingForm, setFormData] = useState({
     description: "Royal Bengal Tiger spotted crossing forest track",
-    zone_name: "Tala Zone Core",
+    zone_name: "Core Zone",
     safari_slot: "Morning Safari",
   });
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
@@ -41,7 +45,6 @@ export default function SightingMap() {
   const mapInstanceRef = useRef<any>(null);
   const markersGroupRef = useRef<any>(null);
 
-  // Sync Auth State
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -49,7 +52,6 @@ export default function SightingMap() {
     return () => unsub();
   }, []);
 
-  // Real-Time Sync with Cloud Firestore
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "sightings"), (snapshot) => {
       const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -58,7 +60,6 @@ export default function SightingMap() {
     return () => unsub();
   }, []);
 
-  // Load Leaflet JS & CSS dynamically
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -81,7 +82,6 @@ export default function SightingMap() {
     }
   }, []);
 
-  // Initialize OpenStreetMap
   const initMap = () => {
     if (!window.L || mapInstanceRef.current) return;
 
@@ -93,7 +93,6 @@ export default function SightingMap() {
       zoomControl: true,
     });
 
-    // Dark OpenStreetMap Tiles
     window.L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 18,
@@ -101,17 +100,16 @@ export default function SightingMap() {
 
     markersGroupRef.current = window.L.layerGroup().addTo(map);
 
-    // Click map to report sighting
     map.on("click", (e: any) => {
       triggerHaptic(12);
       setSelectedLatLng({ lat: e.latlng.lat, lng: e.latlng.lng });
+      setGpsDetected(false);
       setIsModalOpen(true);
     });
 
     mapInstanceRef.current = map;
   };
 
-  // Fly to park when selection changes
   useEffect(() => {
     if (mapInstanceRef.current && PARK_COORDINATES[selectedPark]) {
       const coords = PARK_COORDINATES[selectedPark];
@@ -119,7 +117,6 @@ export default function SightingMap() {
     }
   }, [selectedPark]);
 
-  // Update Heatmap Circles & Markers when sightings update
   useEffect(() => {
     if (!window.L || !markersGroupRef.current) return;
 
@@ -131,7 +128,6 @@ export default function SightingMap() {
 
     parkSightings.forEach((s) => {
       if (s.lat && s.lng) {
-        // Glowing Orange Heatmap Circle
         window.L.circle([s.lat, s.lng], {
           color: "#ff7a00",
           fillColor: "#ff7a00",
@@ -139,7 +135,6 @@ export default function SightingMap() {
           radius: 800,
         }).addTo(markersGroupRef.current);
 
-        // Marker Popup
         const popupContent = `
           <div style="font-family: Arial, sans-serif; padding: 6px; color: #000;">
             <strong style="color: #ea580c; font-size: 13px;">🐅 Tiger Sighting</strong><br/>
@@ -153,6 +148,44 @@ export default function SightingMap() {
       }
     });
   }, [sightings, selectedPark]);
+
+  // Handle Photo Upload with Automatic EXIF GPS Extraction
+  const handlePhotoAutoMark = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    triggerHaptic(15);
+
+    // 1. Convert photo to Base64 preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSightingPhotoBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // 2. Extract EXIF GPS Metadata from Photo
+    const gps = await getExifGPS(file);
+
+    if (gps && gps.lat && gps.lng) {
+      // Auto-detect closest MP National Park
+      const nearestPark = findNearestPark(gps.lat, gps.lng);
+
+      setSelectedPark(nearestPark);
+      setSelectedLatLng({ lat: gps.lat, lng: gps.lng });
+      setGpsDetected(true);
+      setIsModalOpen(true);
+
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([gps.lat, gps.lng], 14, { duration: 1.5 });
+      }
+    } else {
+      alert("No EXIF GPS location found in photo. Defaulting to center of " + selectedPark + ". You can tap on the map to fine-tune location.");
+      const coords = PARK_COORDINATES[selectedPark];
+      setSelectedLatLng({ lat: coords.lat, lng: coords.lng });
+      setGpsDetected(false);
+      setIsModalOpen(true);
+    }
+  };
 
   const handleSubmitSighting = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,6 +204,8 @@ export default function SightingMap() {
         description: sightingForm.description,
         zone_name: sightingForm.zone_name,
         safari_slot: sightingForm.safari_slot,
+        photo_url: sightingPhotoBase64 || "",
+        gps_auto_detected: gpsDetected,
         user_name: currentUser.displayName || currentUser.email?.split("@")[0] || "Safari Guest",
         user_uid: currentUser.uid,
         createdAt: serverTimestamp(),
@@ -180,6 +215,7 @@ export default function SightingMap() {
       setTimeout(() => {
         setIsModalOpen(false);
         setSubmittedSuccess(false);
+        setSightingPhotoBase64("");
       }, 1500);
     } catch (err) {
       console.error("Error submitting sighting:", err);
@@ -188,6 +224,24 @@ export default function SightingMap() {
 
   return (
     <div className="space-y-6">
+      {/* EXIF Photo Location Auto-Marker Button Bar */}
+      <div className="bg-zinc-950 border border-orange-500/30 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 flex-shrink-0">
+            <Camera className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-bold text-white text-sm">Upload Tiger Photo to Auto-Mark Location</h4>
+            <p className="text-zinc-400 text-xs">Upload a JPEG photo taken on your phone. App extracts EXIF GPS tags & auto-places the tiger on the map!</p>
+          </div>
+        </div>
+
+        <label className="bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-6 py-3 rounded-full text-xs transition-all shadow-lg shadow-orange-500/20 flex items-center gap-2 cursor-pointer whitespace-nowrap active:scale-95">
+          <Upload className="w-4 h-4" /> Upload Photo with GPS
+          <input type="file" accept="image/jpeg,image/jpg" onChange={handlePhotoAutoMark} className="hidden" />
+        </label>
+      </div>
+
       {/* Park Selector Tabs */}
       <div className="flex flex-wrap justify-center gap-2">
         {Object.keys(PARK_COORDINATES).map((park) => (
@@ -212,13 +266,12 @@ export default function SightingMap() {
       <div className="relative bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
         <div id="tiger-sightings-map" className="w-full h-[520px] z-10" />
 
-        {/* Floating Instruction Banner */}
         <div className="absolute top-4 left-4 z-20 bg-black/80 backdrop-blur-md border border-white/10 p-3 rounded-2xl text-xs text-white max-w-xs space-y-1">
           <p className="font-extrabold text-orange-400 flex items-center gap-1">
-            <Flame className="w-4 h-4 text-orange-500" /> Click Map to Mark Sighting
+            <Flame className="w-4 h-4 text-orange-500" /> Click Map or Upload Photo
           </p>
           <p className="text-[11px] text-zinc-400 leading-snug">
-            Tap anywhere in {selectedPark} to drop a tiger marker and update the live heat map!
+            Tap anywhere in {selectedPark} or upload a GPS tiger photo to update the live heat map!
           </p>
         </div>
       </div>
@@ -248,10 +301,24 @@ export default function SightingMap() {
                 <p className="text-xs text-zinc-400">{selectedPark}</p>
               </div>
 
+              {gpsDetected && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl text-xs text-emerald-400 font-semibold flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  Auto-detected GPS Location from Photo EXIF ({selectedLatLng?.lat.toFixed(4)}°, {selectedLatLng?.lng.toFixed(4)}°)
+                </div>
+              )}
+
+              {sightingPhotoBase64 && (
+                <div className="relative h-32 w-full rounded-2xl overflow-hidden border border-white/10">
+                  <img src={sightingPhotoBase64} alt="Sighting Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+
               {!currentUser && (
                 <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-2xl text-xs space-y-2 text-center">
                   <p className="text-zinc-300">Sign in required to record tiger sightings on the live map.</p>
                   <button
+                    type="button"
                     onClick={() => setIsAuthOpen(true)}
                     className="bg-orange-500 text-black font-extrabold px-5 py-2 rounded-full text-xs"
                   >
