@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { submitCustomPackage } from "../../lib/api";
-import { Sparkles, CheckCircle2, MessageSquare, Phone } from "lucide-react";
+import { auth, onAuthStateChanged } from "../../lib/firebase";
+import AuthModal from "../auth/AuthModal";
+import { Sparkles, CheckCircle2, MessageSquare, Phone, Lock, LogIn, ShieldCheck } from "lucide-react";
 
 export default function CustomPackage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     customer_name: "",
     email: "",
@@ -15,10 +20,32 @@ export default function CustomPackage() {
   });
   const [submitted, setSubmitted] = useState(false);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user);
+        setFormData((prev) => ({
+          ...prev,
+          customer_name: user.displayName || prev.customer_name,
+          email: user.email || prev.email,
+        }));
+      } else {
+        setCurrentUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     await submitCustomPackage({
       ...formData,
+      user_uid: currentUser.uid,
       budget_inr: Number(formData.budget_inr) || 0
     });
     setSubmitted(true);
@@ -37,14 +64,42 @@ export default function CustomPackage() {
 
   return (
     <section id="custom-package" className="py-12 bg-black text-white">
-      <div className="max-w-4xl mx-auto bg-zinc-900/40 border border-amber-500/30 rounded-3xl p-6 md:p-10 shadow-2xl backdrop-blur-md">
-        <div className="flex items-center justify-center gap-2 text-amber-400 font-medium text-xs uppercase tracking-wider mb-2">
+      <div className="max-w-4xl mx-auto bg-zinc-950 border border-orange-500/30 rounded-3xl p-6 md:p-10 shadow-2xl backdrop-blur-md">
+        <div className="flex items-center justify-center gap-2 text-orange-500 font-medium text-xs uppercase tracking-wider mb-2">
           <Sparkles className="w-4 h-4" /> Tailor-Made Itinerary
         </div>
         <h2 className="text-3xl md:text-4xl font-extrabold text-white text-center mb-3">Request Custom Safari</h2>
         <p className="text-zinc-400 text-center text-sm max-w-xl mx-auto mb-8">
           Personal Innova Crysta pickups, Force Travellers, or multi-day photography jeeps. Dinesh Pandey (+91 9425331205) reviews every custom request.
         </p>
+
+        {/* Mandatory Sign-In Guard Banner */}
+        {!currentUser && (
+          <div className="bg-orange-500/10 border border-orange-500/40 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <h4 className="font-bold text-white text-sm">Sign In Required to Submit Custom Requests</h4>
+                <p className="text-zinc-400 text-xs">Please sign in with Google or Email to submit custom safari requirements.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAuthModalOpen(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-black font-extrabold px-5 py-2.5 rounded-full text-xs transition-all shadow-lg shadow-orange-500/20 flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <LogIn className="w-4 h-4" /> Sign In to Continue
+            </button>
+          </div>
+        )}
+
+        {currentUser && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 px-4 py-2.5 rounded-2xl text-xs text-emerald-400 flex items-center gap-2 mb-8">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" /> Signed in as <strong>{currentUser.displayName || currentUser.email}</strong>
+          </div>
+        )}
 
         {submitted ? (
           <div className="text-center py-8 space-y-6">
@@ -67,27 +122,42 @@ export default function CustomPackage() {
               </a>
               <a
                 href="tel:9425331205"
-                className="bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3.5 rounded-full flex items-center justify-center gap-2 transition-all text-sm"
+                className="bg-zinc-900 hover:bg-zinc-800 text-white font-semibold px-6 py-3.5 rounded-full flex items-center justify-center gap-2 transition-all text-sm border border-white/10"
               >
-                <Phone className="w-4 h-4 text-amber-400" /> Call +91 9425331205
+                <Phone className="w-4 h-4 text-orange-500" /> Call +91 9425331205
               </a>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" placeholder="Your Full Name" required value={formData.customer_name} onChange={(e) => setFormData({...formData, customer_name: e.target.value})} className="bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm" />
-            <input type="email" placeholder="Email Address" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm" />
-            <input type="tel" placeholder="Phone Number (e.g. 9876543210)" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm" />
-            <input type="text" placeholder="Preferred Travel Dates" required value={formData.preferred_dates} onChange={(e) => setFormData({...formData, preferred_dates: e.target.value})} className="bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm" />
-            <input type="number" placeholder="Estimated Budget in INR (₹)" required value={formData.budget_inr} onChange={(e) => setFormData({...formData, budget_inr: e.target.value})} className="md:col-span-2 bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm" />
-            <textarea placeholder="Special requirements (e.g., Innova Crysta, photography jeeps, group size)" rows={4} required value={formData.requirements} onChange={(e) => setFormData({...formData, requirements: e.target.value})} className="md:col-span-2 bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm"></textarea>
+            <input type="text" placeholder="Your Full Name" required value={formData.customer_name} onChange={(e) => setFormData({...formData, customer_name: e.target.value})} className="bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm" />
+            <input type="email" placeholder="Email Address" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm" />
+            <input type="tel" placeholder="Phone Number (e.g. 9876543210)" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm" />
+            <input type="text" placeholder="Preferred Travel Dates" required value={formData.preferred_dates} onChange={(e) => setFormData({...formData, preferred_dates: e.target.value})} className="bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm" />
+            <input type="number" placeholder="Estimated Budget in INR (₹)" required value={formData.budget_inr} onChange={(e) => setFormData({...formData, budget_inr: e.target.value})} className="md:col-span-2 bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm" />
+            <textarea placeholder="Special requirements (e.g., Innova Crysta, photography jeeps, group size)" rows={4} required value={formData.requirements} onChange={(e) => setFormData({...formData, requirements: e.target.value})} className="md:col-span-2 bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"></textarea>
 
-            <button type="submit" className="md:col-span-2 bg-white text-black font-bold py-4 rounded-xl transition-all text-sm">
-              Submit Custom Request
-            </button>
+            {!currentUser ? (
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="md:col-span-2 bg-orange-500 text-black font-extrabold py-4 rounded-xl transition-all text-sm hover:bg-orange-400 flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" /> Sign In to Submit Custom Request
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="md:col-span-2 bg-orange-500 text-black font-extrabold py-4 rounded-xl transition-all text-sm hover:bg-orange-400"
+              >
+                Submit Custom Request to Dinesh Pandey
+              </button>
+            )}
           </form>
         )}
       </div>
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onAuthSuccess={(u: any) => setCurrentUser(u)} />
     </section>
   );
 }

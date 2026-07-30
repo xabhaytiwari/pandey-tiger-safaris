@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { submitBooking, fetchFromAPI } from "../../lib/api";
 import { auth, onAuthStateChanged } from "../../lib/firebase";
+import AuthModal from "../auth/AuthModal";
 import { 
   Calendar as CalendarIcon, CheckCircle2, MessageSquare, Phone, CreditCard, ShieldCheck, 
-  Users, Upload, Globe, User, MapPin, Info, AlertTriangle
+  Users, Upload, Globe, User, MapPin, Info, Lock, LogIn
 } from "lucide-react";
 
 declare global {
@@ -18,6 +19,8 @@ declare global {
 export default function BookingWizard({ packages = [], cars = [] }: any) {
   const [step, setStep] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   const [parks, setParks] = useState<any[]>([]);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [selectedParkName, setSelectedParkName] = useState<string>("Bandhavgarh National Park");
@@ -55,6 +58,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
     loadInitialData();
   }, []);
 
+  // Listen to Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -64,6 +68,8 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
           customer_name: user.displayName || prev.customer_name,
           customer_email: user.email || prev.customer_email,
         }));
+      } else {
+        setCurrentUser(null);
       }
     });
     return () => unsubscribe();
@@ -79,7 +85,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
     }
   }, []);
 
-  // Filter packages by selected National Park
   const filteredPackages = packages.filter((p: any) => !p.park_name || p.park_name === selectedParkName);
   const selectedPkg = filteredPackages.find((p: any) => p.id === formData.package_id) || filteredPackages[0] || { title: "National Park Safari", price_inr: 28500 };
   const selectedCar = cars.find((c: any) => c.id === formData.car_id)?.name || "Safari Jeep";
@@ -87,7 +92,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
   const advanceAmount = Math.round((selectedPkg.price_inr || 28500) * 0.25);
   const payableAmount = formData.payment_type === "Advance Paid" ? advanceAmount : (selectedPkg.price_inr || 28500);
 
-  // Generate 365 Days Available Scrollable Array (Excludes Blocked Dates)
   const get365AvailableDates = () => {
     const list = [];
     const today = new Date();
@@ -124,6 +128,11 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
   };
 
   const handleConfirmAndPay = async () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     setPaymentLoading(true);
     try {
       const res = await fetch("/api/payment/create-order", {
@@ -151,6 +160,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
             car_name: selectedCar,
             payment_status: formData.payment_type,
             amount_paid_inr: payableAmount,
+            user_uid: currentUser.uid,
             razorpay_payment_id: response.razorpay_payment_id || "demo_pay_id",
           });
           setPaymentSuccess(true);
@@ -177,6 +187,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
           car_name: selectedCar,
           payment_status: formData.payment_type,
           amount_paid_inr: payableAmount,
+          user_uid: currentUser.uid,
           razorpay_payment_id: "demo_pay_id",
         });
         setPaymentSuccess(true);
@@ -209,6 +220,33 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
       <div className="max-w-3xl mx-auto bg-zinc-950 border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl backdrop-blur-md">
         <h2 className="text-3xl font-extrabold text-center text-white mb-2">Prepaid Safari Booking</h2>
         <p className="text-zinc-400 text-center text-sm mb-8">Official park permits reserved strictly upon ID verification & prepayment</p>
+
+        {/* Mandatory Sign-In Guard Banner */}
+        {!currentUser && (
+          <div className="bg-orange-500/10 border border-orange-500/40 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <h4 className="font-bold text-white text-sm">Sign In Required to Reserve Permits</h4>
+                <p className="text-zinc-400 text-xs">Please sign in with Google or Email before submitting your booking.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-black font-extrabold px-5 py-2.5 rounded-full text-xs transition-all shadow-lg shadow-orange-500/20 flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <LogIn className="w-4 h-4" /> Sign In to Continue
+            </button>
+          </div>
+        )}
+
+        {currentUser && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 px-4 py-2.5 rounded-2xl text-xs text-emerald-400 flex items-center gap-2 mb-8">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" /> Signed in as <strong>{currentUser.displayName || currentUser.email}</strong>
+          </div>
+        )}
 
         <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4 text-xs font-semibold uppercase tracking-wider">
           <span className={step >= 1 ? "text-orange-500 font-bold" : "text-zinc-600"}>1. Park & Vehicle</span>
@@ -341,7 +379,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                         </option>
                       ))}
                     </select>
-                    <p className="text-[10px] text-zinc-500">Dates blocked by Dinesh Pandey for park maintenance or holidays are automatically excluded.</p>
                   </div>
 
                   <div className="pt-2 border-t border-white/10 space-y-3">
@@ -386,12 +423,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
 
               {step === 3 && (
                 <motion.div key="step3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
-                  {currentUser && (
-                    <div className="bg-orange-500/10 border border-orange-500/30 px-4 py-2.5 rounded-xl text-xs text-orange-300 flex items-center gap-2">
-                      <User className="w-4 h-4 text-orange-500" /> Auto-filled from signed in account ({currentUser.email})
-                    </div>
-                  )}
-
                   <input
                     type="text"
                     placeholder="Full Name"
@@ -469,15 +500,27 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
 
                   <div className="flex gap-4 pt-2">
                     <button type="button" onClick={() => setStep(2)} className="w-1/2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 py-3.5 rounded-xl text-sm font-semibold">Back</button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmAndPay}
-                      disabled={paymentLoading || !formData.customer_name || !formData.customer_phone || !formData.id_proof_base64}
-                      className="w-1/2 bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <CreditCard className="w-4 h-4" />
-                      {paymentLoading ? "Connecting Gateway..." : `Pay ₹${payableAmount.toLocaleString("en-IN")}`}
-                    </button>
+
+                    {/* Action Button: Triggers Auth if not logged in */}
+                    {!currentUser ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsAuthModalOpen(true)}
+                        className="w-1/2 bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-orange-400"
+                      >
+                        <LogIn className="w-4 h-4" /> Sign In to Pay ₹{payableAmount.toLocaleString("en-IN")}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleConfirmAndPay}
+                        disabled={paymentLoading || !formData.customer_name || !formData.customer_phone || !formData.id_proof_base64}
+                        className="w-1/2 bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-orange-400"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        {paymentLoading ? "Connecting Gateway..." : `Pay ₹${payableAmount.toLocaleString("en-IN")}`}
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -485,6 +528,8 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
           </div>
         )}
       </div>
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onAuthSuccess={(u: any) => setCurrentUser(u)} />
     </section>
   );
 }
