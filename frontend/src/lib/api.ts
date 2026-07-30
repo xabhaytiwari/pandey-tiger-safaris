@@ -91,7 +91,7 @@ export async function fetchFromAPI(endpoint: string) {
     case "/contact":
       return getCollectionData("contact", SEED_DATA.contact);
     case "/availability":
-      const dates = Array.from({ length: 10 }, (_, i) => {
+      const dates = Array.from({ length: 14 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() + i);
         return { id: `date_${i}`, date: d.toISOString().split("T")[0], is_available: true };
@@ -102,12 +102,14 @@ export async function fetchFromAPI(endpoint: string) {
   }
 }
 
+// Create Prepaid Safari Booking in Firestore
 export async function submitBooking(payload: any) {
   try {
     const docRef = await addDoc(collection(db, "bookings"), {
       ...payload,
       createdAt: serverTimestamp(),
-      status: "pending"
+      booking_source: payload.booking_source || "web_prepaid",
+      payment_status: payload.payment_status || "Advance Paid",
     });
     return { status: "success", booking_id: docRef.id, message: "Safari booking request saved to Cloud Firestore!" };
   } catch (error: any) {
