@@ -185,12 +185,11 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       setError("Verification failed");
-    } fontally {
+    } finally {
       setLoading(false);
     }
   };
 
-  // Archive / Soft Delete Package
   const handleArchivePackage = async (id: string) => {
     try {
       await setDoc(doc(db, "packages", id), { is_archived: true }, { merge: true });
@@ -199,7 +198,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Unarchive / Restore Package
   const handleUnarchivePackage = async (id: string) => {
     try {
       await setDoc(doc(db, "packages", id), { is_archived: false }, { merge: true });
@@ -208,7 +206,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Delete Package Permanently
   const handleDeletePackagePermanently = async (id: string) => {
     if (confirm("Are you sure you want to permanently delete this package?")) {
       try {
@@ -261,6 +258,16 @@ export default function AdminDashboard() {
         createdAt: serverTimestamp(),
       });
       setIsPackageModalOpen(false);
+      setPackageForm({
+        park_name: parksList[0]?.name || "Bandhavgarh National Park",
+        title: "",
+        duration: "3 Days / 2 Nights",
+        hotel_stars: "5-Star Ultra-Luxury Resort",
+        price_inr: 28500,
+        description: "",
+        highlights: "4 Safaris, Luxury Resort Stay, Station Pickup",
+        image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
+      });
     } catch (err: any) {
       alert("Error creating package: " + err.message);
     }
@@ -286,6 +293,7 @@ export default function AdminDashboard() {
         createdAt: serverTimestamp(),
       });
       setIsDriverModalOpen(false);
+      setDriverForm({ name: "", experience_years: 10, rating: 4.9, photo_base64: "" });
     } catch (err: any) {
       alert("Error creating driver: " + err.message);
     }
