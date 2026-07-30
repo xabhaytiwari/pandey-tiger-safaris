@@ -14,42 +14,52 @@ const SEED_DATA = {
     phone: "9425331205",
     role: "Founder & Premier Tour Operator",
     headquarter: "Bandhavgarh National Park, MP",
-    bio: "Dinesh Pandey (+91 9425331205) is the proud business owner of Pandey Tiger Safaris in Bandhavgarh. Dinesh provides end-to-end tour and travel management—offering complete safari packages, luxury vehicle fleets (Innova Crysta, Force Traveller, Swift Dzire), and an army of Bandhavgarh's finest licensed forest guides and tiger trackers on demand.",
-    image_url: "/dinesh-pandey.jpg"
+    bio: "Dinesh Pandey (+91 9425331205) is the proud business owner of Pandey Tiger Safaris across Madhya Pradesh's tiger reserves. Dinesh provides end-to-end tour and travel management—offering complete safari packages, luxury vehicle fleets (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed forest guides and tiger trackers on demand.",
+    image_url: "/gallery/owner-1.jpg"
   },
-  // Default Fleet with High-Resolution Real Vehicle Photos from Unsplash
+  parks: [
+    { id: "park_1", name: "Bandhavgarh National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800" },
+    { id: "park_2", name: "Kanha National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800" },
+    { id: "park_3", name: "Pench National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800" },
+    { id: "park_4", name: "Panna National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800" },
+    { id: "park_5", name: "Satpura National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" }
+  ],
   cars: [
     { 
       id: "car_1", 
       name: "Toyota Innova Crysta", 
       category: "Premium SUV Transport", 
       capacity: 7, 
-      image_url: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=1200", 
-      description: "White 7-seater premium AC MPV/SUV for smooth transfers from Katni or Jabalpur." 
+      image_url: "https://www.team-bhp.com/sites/default/files/styles/check_extra_large_for_review/public/innova-crysta-2.jpg", 
+      description: "White 7-seater AC SUV for smooth transfers from Katni, Jabalpur or Umaria.",
+      is_representative: true
     },
     { 
       id: "car_2", 
       name: "Force Traveller", 
       category: "Group Luxury Minibus", 
       capacity: 13, 
-      image_url: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=1200", 
-      description: "Spacious AC minibus ideal for family groups and corporate wildlife expeditions." 
+      image_url: "https://5.imimg.com/data5/IK/YH/GLADMIN-9705085/force-tempo-traveller-1000x1000.jpg", 
+      description: "Spacious AC minibus ideal for family groups and corporate wildlife expeditions.",
+      is_representative: true
     },
     { 
       id: "car_3", 
       name: "Maruti Suzuki Swift Dzire", 
       category: "Comfort Sedan", 
       capacity: 4, 
-      image_url: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=1200", 
-      description: "Fuel-efficient AC sedan for small families and airport/railway station pickups." 
+      image_url: "https://i.ndtvimg.com/i/2017-06/maruti-suzuki-dzire-styling_827x510_81498479945.jpg", 
+      description: "Fuel-efficient AC sedan for small families and station pickups.",
+      is_representative: true
     },
     { 
       id: "car_4", 
       name: "Open 4x4 Maruti Suzuki Gypsy", 
       category: "Jungle Safari Jeep", 
       capacity: 6, 
-      image_url: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=1200", 
-      description: "Forest-department authorized open 4x4 jeep for safari tracks in Tala, Magdhi & Khitauli." 
+      image_url: "https://www.team-bhp.com/sites/default/files/pictures2021/gypsy-7.jpeg", 
+      description: "Forest-department authorized open 4x4 jeep for safari tracks in Tala, Magdhi & Khitauli.",
+      is_representative: true
     },
     { 
       id: "car_5", 
@@ -57,11 +67,43 @@ const SEED_DATA = {
       category: "Tailored Fleet", 
       capacity: 0, 
       image_url: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=1200", 
-      description: "Bespoke personal vehicle requests accommodated directly by Dinesh Pandey." 
+      description: "Bespoke personal vehicle requests accommodated directly by Dinesh Pandey.",
+      is_representative: true
     }
   ],
-  packages: [], // Managed dynamically from Admin
-  drivers: [],  // Managed dynamically from Admin
+  packages: [
+    {
+      id: "pkg_1",
+      park_name: "Bandhavgarh National Park",
+      title: "Royal Bengal Tiger Expedition",
+      duration: "3 Days / 2 Nights",
+      price_inr: 28500,
+      description: "4 Open Jeep Safaris in Tala and Magdhi zones with dedicated licensed guides and resort stays.",
+      highlights: "4 Safaris, Resort Stay, Railway Station Pickup",
+      image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
+    },
+    {
+      id: "pkg_2",
+      park_name: "Bandhavgarh National Park",
+      title: "Bandhavgarh Fort & Wildlife Trail",
+      duration: "4 Days / 3 Nights",
+      price_inr: 42000,
+      description: "Trek the ancient fort combined with morning and evening jungle tiger tracking.",
+      highlights: "6 Safaris, Ancient Fort Trek, Dedicated Fleet Support",
+      image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800"
+    },
+    {
+      id: "pkg_3",
+      park_name: "Kanha National Park",
+      title: "Kanha Tiger & Barasingha Circuit",
+      duration: "3 Days / 2 Nights",
+      price_inr: 31000,
+      description: "Explore Mukki and Khatia zones for royal Bengal tigers and hard-ground barasingha.",
+      highlights: " Mukki & Khatia Safaris, Resort Accommodation",
+      image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800"
+    }
+  ],
+  drivers: [],
   reviews: [
     { id: "rev_1", author: "Ananya Sharma", location: "Delhi, India", rating: 5, comment: "Dinesh Pandey (+91 9425331205) organized our entire package and provided the best forest guide. Top service!" },
     { id: "rev_2", author: "Suresh Kothari", location: "Mumbai, India", rating: 5, comment: "Booked an Innova Crysta and complete tour with Dinesh Ji. Everything was seamless!" }
@@ -94,6 +136,8 @@ export async function fetchFromAPI(endpoint: string) {
   switch (endpoint) {
     case "/founder":
       return getCollectionData("founder", SEED_DATA.founder);
+    case "/parks":
+      return getCollectionData("parks", SEED_DATA.parks);
     case "/packages":
       return getCollectionData("packages", SEED_DATA.packages);
     case "/cars":
@@ -105,7 +149,8 @@ export async function fetchFromAPI(endpoint: string) {
     case "/contact":
       return getCollectionData("contact", SEED_DATA.contact);
     case "/availability":
-      const dates = Array.from({ length: 14 }, (_, i) => {
+      // Generate 365 days (1 Year) availability array starting from today
+      const dates = Array.from({ length: 365 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() + i);
         return { id: `date_${i}`, date: d.toISOString().split("T")[0], is_available: true };
@@ -124,7 +169,7 @@ export async function submitBooking(payload: any) {
       booking_source: payload.booking_source || "web_prepaid",
       payment_status: payload.payment_status || "Advance Paid",
     });
-    return { status: "success", booking_id: docRef.id, message: "Safari booking saved!" };
+    return { status: "success", booking_id: docRef.id };
   } catch (error: any) {
     console.error("Booking error:", error);
     return { status: "error", message: error.message };
@@ -140,6 +185,19 @@ export async function addTourPackage(payload: any) {
     return { status: "success", package_id: docRef.id };
   } catch (error: any) {
     console.error("Error adding package:", error);
+    return { status: "error", message: error.message };
+  }
+}
+
+export async function addNationalPark(payload: any) {
+  try {
+    const docRef = await addDoc(collection(db, "parks"), {
+      ...payload,
+      createdAt: serverTimestamp(),
+    });
+    return { status: "success", park_id: docRef.id };
+  } catch (error: any) {
+    console.error("Error adding park:", error);
     return { status: "error", message: error.message };
   }
 }

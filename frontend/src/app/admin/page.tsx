@@ -8,7 +8,7 @@ import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firest
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, CheckCircle2, LogOut, Calendar as CalendarIcon, User, Mail, Phone, 
-  PlusCircle, Upload, Tag, X, FileText, Package, UserCheck, Star
+  PlusCircle, Tag, X, FileText, Package, UserCheck, Star, MapPin, ChevronLeft, ChevronRight
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -23,20 +23,32 @@ export default function AdminDashboard() {
   const [customReqs, setCustomReqs] = useState<any[]>([]);
   const [packagesList, setPackagesList] = useState<any[]>([]);
   const [driversList, setDriversList] = useState<any[]>([]);
+  const [parksList, setParksList] = useState<any[]>([]);
+
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [calendarMonthOffset, setCalendarMonthOffset] = useState(0);
 
   // Modals State
   const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
   const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
+  const [isParkModalOpen, setIsParkModalOpen] = useState(false);
+
+  // Park Form State
+  const [parkForm, setParkForm] = useState({
+    name: "",
+    state: "Madhya Pradesh",
+    image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
+  });
 
   // Add Package Form State
   const [packageForm, setPackageForm] = useState({
+    park_name: "Bandhavgarh National Park",
     title: "",
     duration: "3 Days / 2 Nights",
     price_inr: 28500,
     description: "",
-    highlights: "4 Safaris, Resort Stay, Railway Station Pickup",
+    highlights: "4 Safaris, Resort Stay, Station Pickup",
     image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
   });
 
@@ -57,6 +69,7 @@ export default function AdminDashboard() {
     nationality: "Indian",
     id_proof_type: "Aadhaar Card",
     booking_date: new Date().toISOString().split("T")[0],
+    park_name: "Bandhavgarh National Park",
     package_title: "Royal Bengal Tiger Expedition",
     car_name: "Innova Crysta",
     payment_status: "Advance Paid",
@@ -73,7 +86,7 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // Real-Time Sync with Cloud Firestore
+  // Real-Time Firestore Sync
   useEffect(() => {
     if (authStep !== "authenticated") return;
 
@@ -93,11 +106,16 @@ export default function AdminDashboard() {
       setDriversList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    const unsubParks = onSnapshot(collection(db, "parks"), (snapshot) => {
+      setParksList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     return () => {
       unsubBookings();
       unsubCustom();
       unsubPackages();
       unsubDrivers();
+      unsubParks();
     };
   }, [authStep]);
 
@@ -152,45 +170,34 @@ export default function AdminDashboard() {
     }
   };
 
-  // Create New Package
-  const handleCreatePackage = async (e: React.FormEvent) => {
+  const handleCreatePark = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, "packages"), {
-        ...packageForm,
-        createdAt: serverTimestamp(),
-      });
-      setIsPackageModalOpen(false);
-      setPackageForm({
-        title: "",
-        duration: "3 Days / 2 Nights",
-        price_inr: 28500,
-        description: "",
-        highlights: "4 Safaris, Resort Stay, Railway Station Pickup",
-        image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
-      });
+      await addDoc(collection(db, "parks"), { ...parkForm, createdAt: serverTimestamp() });
+      setIsParkModalOpen(false);
+      setParkForm({ name: "", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800" });
     } catch (err) {
-      console.error("Error creating package:", err);
+      console.error(err);
     }
   };
 
-  // Create New Driver
+  const handleCreatePackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, "packages"), { ...packageForm, createdAt: serverTimestamp() });
+      setIsPackageModalOpen(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleCreateDriver = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, "drivers"), {
-        ...driverForm,
-        createdAt: serverTimestamp(),
-      });
+      await addDoc(collection(db, "drivers"), { ...driverForm, createdAt: serverTimestamp() });
       setIsDriverModalOpen(false);
-      setDriverForm({
-        name: "",
-        experience_years: 10,
-        rating: 4.9,
-        photo_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400"
-      });
     } catch (err) {
-      console.error("Error creating driver:", err);
+      console.error(err);
     }
   };
 
@@ -198,9 +205,7 @@ export default function AdminDashboard() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setOfflineForm(prev => ({ ...prev, [fieldName]: reader.result as string }));
-      };
+      reader.onloadend = () => setOfflineForm(prev => ({ ...prev, [fieldName]: reader.result as string }));
       reader.readAsDataURL(file);
     }
   };
@@ -208,23 +213,32 @@ export default function AdminDashboard() {
   const handleCreateOfflineBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, "bookings"), {
-        ...offlineForm,
-        createdAt: serverTimestamp(),
-      });
+      await addDoc(collection(db, "bookings"), { ...offlineForm, createdAt: serverTimestamp() });
       setIsOfflineModalOpen(false);
     } catch (err) {
-      console.error("Error creating offline booking:", err);
+      console.error(err);
     }
   };
 
-  const calendarDates = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    const dateStr = d.toISOString().split("T")[0];
-    const count = bookings.filter(b => b.booking_date === dateStr).length;
-    return { dateStr, count };
-  });
+  // 365-Day Calendar Month View Generator
+  const getMonthCalendarDates = () => {
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() + calendarMonthOffset);
+    startDate.setDate(1);
+
+    const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+    const result = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(startDate.getFullYear(), startDate.getMonth(), day);
+      const dateStr = d.toISOString().split("T")[0];
+      const count = bookings.filter(b => b.booking_date === dateStr).length;
+      result.push({ dateStr, count });
+    }
+    return result;
+  };
+
+  const monthName = new Date(new Date().getFullYear(), new Date().getMonth() + calendarMonthOffset, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 
   const filteredBookings = selectedDate 
     ? bookings.filter(b => b.booking_date === selectedDate)
@@ -313,53 +327,50 @@ export default function AdminDashboard() {
               <h1 className="text-3xl font-extrabold text-white mt-1">Owner Dashboard</h1>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => setIsPackageModalOpen(true)}
-                className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-all"
-              >
-                <Package className="w-4 h-4 text-orange-500" /> + Add Package
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={() => setIsParkModalOpen(true)} className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-3.5 py-2 rounded-full text-xs flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-orange-500" /> + Add Park
               </button>
 
-              <button
-                onClick={() => setIsDriverModalOpen(true)}
-                className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-all"
-              >
-                <UserCheck className="w-4 h-4 text-orange-500" /> + Add Driver
+              <button onClick={() => setIsPackageModalOpen(true)} className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-3.5 py-2 rounded-full text-xs flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-orange-500" /> + Add Package
               </button>
 
-              <button
-                onClick={() => setIsOfflineModalOpen(true)}
-                className="bg-orange-500 hover:bg-orange-600 text-black font-extrabold px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-all shadow-lg shadow-orange-500/20"
-              >
+              <button onClick={() => setIsDriverModalOpen(true)} className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-3.5 py-2 rounded-full text-xs flex items-center gap-1.5">
+                <UserCheck className="w-3.5 h-3.5 text-orange-500" /> + Add Driver
+              </button>
+
+              <button onClick={() => setIsOfflineModalOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-black font-extrabold px-4 py-2 rounded-full text-xs flex items-center gap-1.5 transition-all shadow-lg shadow-orange-500/20">
                 <PlusCircle className="w-4 h-4" /> Add Offline Booking
               </button>
 
-              <button onClick={() => { sessionStorage.removeItem("admin_authed"); setAuthStep("login"); }} className="bg-zinc-900 border border-white/10 text-zinc-300 hover:text-red-400 px-4 py-2 rounded-full text-xs flex items-center gap-1.5 transition-all">
+              <button onClick={() => { sessionStorage.removeItem("admin_authed"); setAuthStep("login"); }} className="bg-zinc-900 border border-white/10 text-zinc-300 hover:text-red-400 px-3.5 py-2 rounded-full text-xs flex items-center gap-1 transition-all">
                 <LogOut className="w-3.5 h-3.5" /> Logout
               </button>
             </div>
           </div>
 
-          {/* Calendar */}
+          {/* 365-Day Calendar with Month Navigation */}
           <section className="bg-zinc-950 border border-white/10 rounded-3xl p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <CalendarIcon className="w-5 h-5 text-orange-500" /> Interactive Booking Calendar
+                  <CalendarIcon className="w-5 h-5 text-orange-500" /> 365-Day Interactive Calendar ({monthName})
                 </h2>
                 <p className="text-xs text-zinc-400">Click a date to filter bookings</p>
               </div>
 
-              <div className="flex items-center gap-3 text-[11px] font-semibold">
-                <span className="flex items-center gap-1 text-emerald-400"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Available (0)</span>
-                <span className="flex items-center gap-1 text-amber-400"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Medium (1)</span>
-                <span className="flex items-center gap-1 text-rose-400"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> High Interest (2+)</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 bg-zinc-900 border border-white/10 rounded-xl p-1">
+                  <button onClick={() => setCalendarMonthOffset(prev => Math.max(0, prev - 1))} disabled={calendarMonthOffset === 0} className="p-1 text-white hover:text-orange-400 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+                  <span className="text-xs font-bold text-orange-400 px-2">{monthName}</span>
+                  <button onClick={() => setCalendarMonthOffset(prev => Math.min(11, prev + 1))} disabled={calendarMonthOffset === 11} className="p-1 text-white hover:text-orange-400 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 pt-2">
-              {calendarDates.map(({ dateStr, count }) => {
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5 pt-2 max-h-72 overflow-y-auto">
+              {getMonthCalendarDates().map(({ dateStr, count }) => {
                 const isSelected = selectedDate === dateStr;
                 let colorStyle = "bg-emerald-500/10 border-emerald-500/30 text-emerald-300";
                 if (count === 1) colorStyle = "bg-amber-500/20 border-amber-500/50 text-amber-300";
@@ -374,7 +385,7 @@ export default function AdminDashboard() {
                     }`}
                   >
                     <p className="text-[10px] uppercase font-mono tracking-wider">{dateStr}</p>
-                    <p className="text-base font-extrabold mt-0.5">{count} Booked</p>
+                    <p className="text-sm font-extrabold mt-0.5">{count} Booked</p>
                   </button>
                 );
               })}
@@ -383,14 +394,27 @@ export default function AdminDashboard() {
             {selectedDate && (
               <div className="pt-2 flex justify-between items-center text-xs text-orange-400 font-semibold border-t border-white/5">
                 <span>Filtering for: <strong>{selectedDate}</strong></span>
-                <button onClick={() => setSelectedDate(null)} className="flex items-center gap-1 hover:underline">
-                  <X className="w-3.5 h-3.5" /> Clear Filter
-                </button>
+                <button onClick={() => setSelectedDate(null)} className="flex items-center gap-1 hover:underline"><X className="w-3.5 h-3.5" /> Clear Filter</button>
               </div>
             )}
           </section>
 
-          {/* Published Packages Management View */}
+          {/* National Parks List */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-orange-500" /> Active National Parks ({parksList.length})
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {parksList.map((p) => (
+                <div key={p.id} className="bg-zinc-950 border border-white/10 p-3 rounded-2xl text-center space-y-1 text-xs">
+                  <p className="font-bold text-white">{p.name}</p>
+                  <p className="text-[10px] text-zinc-500">{p.state}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Published Packages */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Package className="w-5 h-5 text-orange-500" /> Tour Packages ({packagesList.length})
@@ -404,33 +428,9 @@ export default function AdminDashboard() {
                   <div key={p.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex gap-4 text-xs">
                     <img src={p.image_url} alt={p.title} className="w-24 h-24 object-cover rounded-xl" />
                     <div className="space-y-1">
+                      <span className="text-[10px] text-orange-400 font-bold uppercase">{p.park_name || "Bandhavgarh"}</span>
                       <h4 className="font-bold text-white text-sm">{p.title}</h4>
                       <p className="text-orange-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
-                      <p className="text-zinc-400 line-clamp-2">{p.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Published Drivers Management View */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-orange-500" /> Active Drivers ({driversList.length})
-            </h2>
-
-            {driversList.length === 0 ? (
-              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No drivers added yet. Click &quot;+ Add Driver&quot; to register a driver.</p>
-            ) : (
-              <div className="grid md:grid-cols-3 gap-4">
-                {driversList.map((d) => (
-                  <div key={d.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex items-center gap-4 text-xs">
-                    <img src={d.photo_url} alt={d.name} className="w-14 h-14 object-cover rounded-full" />
-                    <div>
-                      <h4 className="font-bold text-white text-sm">{d.name}</h4>
-                      <p className="text-zinc-400">{d.experience_years} Years Experience</p>
-                      <p className="text-orange-400 flex items-center gap-1 font-bold"><Star className="w-3 h-3 fill-orange-400" /> {d.rating} Rating</p>
                     </div>
                   </div>
                 ))}
@@ -445,7 +445,7 @@ export default function AdminDashboard() {
             </h2>
 
             {filteredBookings.length === 0 ? (
-              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No bookings found for the selected date criteria.</p>
+              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No bookings found.</p>
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
                 {filteredBookings.map((b) => (
@@ -456,8 +456,8 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-zinc-400 border-y border-white/5 py-2">
+                      <p>Park: <strong className="text-white">{b.park_name || "Bandhavgarh"}</strong></p>
                       <p>Travelers: <strong className="text-white">{b.guests_count || 2} Persons</strong></p>
-                      <p>Nationality: <strong className="text-white">{b.nationality || "Indian"}</strong></p>
                       <p>Package: <strong className="text-zinc-200">{b.package_title || b.package_id}</strong></p>
                       <p>Vehicle: <strong className="text-zinc-200">{b.car_name || b.car_id}</strong></p>
                       <p className="col-span-2">Payment: <strong className="text-amber-400 uppercase">{b.payment_status || "Advance Paid"}</strong> ({b.amount_paid_inr ? `₹${b.amount_paid_inr.toLocaleString("en-IN")}` : "Prepaid"})</p>
@@ -488,6 +488,32 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Add National Park Modal */}
+      <AnimatePresence>
+        {isParkModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
+                  <MapPin className="w-5 h-5" /> Add National Park
+                </h3>
+                <button onClick={() => setIsParkModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreatePark} className="space-y-3 text-xs">
+                <input type="text" placeholder="Park Name (e.g. Satpura National Park)" required value={parkForm.name} onChange={(e) => setParkForm({...parkForm, name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                <input type="text" placeholder="State (e.g. Madhya Pradesh)" required value={parkForm.state} onChange={(e) => setParkForm({...parkForm, state: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                <input type="url" placeholder="Park Image URL" required value={parkForm.image_url} onChange={(e) => setParkForm({...parkForm, image_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+
+                <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3 rounded-xl text-sm hover:bg-orange-400 transition-all">
+                  Save National Park
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Add Package Modal */}
       <AnimatePresence>
         {isPackageModalOpen && (
@@ -501,6 +527,13 @@ export default function AdminDashboard() {
               </div>
 
               <form onSubmit={handleCreatePackage} className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-zinc-400 mb-1">Select National Park</label>
+                  <select value={packageForm.park_name} onChange={(e) => setPackageForm({...packageForm, park_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white">
+                    {parksList.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  </select>
+                </div>
+
                 <input type="text" placeholder="Package Title" required value={packageForm.title} onChange={(e) => setPackageForm({...packageForm, title: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
                 
                 <div className="grid grid-cols-2 gap-3">
@@ -509,7 +542,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <textarea placeholder="Package Description" rows={3} required value={packageForm.description} onChange={(e) => setPackageForm({...packageForm, description: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white"></textarea>
-                <input type="text" placeholder="Highlights (e.g. 4 Safaris, Resort Stay)" required value={packageForm.highlights} onChange={(e) => setPackageForm({...packageForm, highlights: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                <input type="text" placeholder="Highlights" required value={packageForm.highlights} onChange={(e) => setPackageForm({...packageForm, highlights: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
                 <input type="url" placeholder="Cover Image URL" required value={packageForm.image_url} onChange={(e) => setPackageForm({...packageForm, image_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
 
                 <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all">
@@ -537,8 +570,8 @@ export default function AdminDashboard() {
                 <input type="text" placeholder="Driver Full Name" required value={driverForm.name} onChange={(e) => setDriverForm({...driverForm, name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
                 
                 <div className="grid grid-cols-2 gap-3">
-                  <input type="number" placeholder="Experience Years (e.g. 10)" required value={driverForm.experience_years} onChange={(e) => setDriverForm({...driverForm, experience_years: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
-                  <input type="number" step="0.1" max="5.0" placeholder="Rating (e.g. 4.9)" required value={driverForm.rating} onChange={(e) => setDriverForm({...driverForm, rating: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                  <input type="number" placeholder="Experience Years" required value={driverForm.experience_years} onChange={(e) => setDriverForm({...driverForm, experience_years: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                  <input type="number" step="0.1" max="5.0" placeholder="Rating" required value={driverForm.rating} onChange={(e) => setDriverForm({...driverForm, rating: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
                 </div>
 
                 <input type="url" placeholder="Driver Photo URL" required value={driverForm.photo_url} onChange={(e) => setDriverForm({...driverForm, photo_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
@@ -566,20 +599,20 @@ export default function AdminDashboard() {
 
               <form onSubmit={handleCreateOfflineBooking} className="space-y-3 text-xs">
                 <input type="text" placeholder="Customer Name" required value={offlineForm.customer_name} onChange={(e) => setOfflineForm({...offlineForm, customer_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
-                <input type="tel" placeholder="Customer Phone (e.g. 9876543210)" required value={offlineForm.customer_phone} onChange={(e) => setOfflineForm({...offlineForm, customer_phone: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                <input type="tel" placeholder="Customer Phone" required value={offlineForm.customer_phone} onChange={(e) => setOfflineForm({...offlineForm, customer_phone: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
                 <input type="email" placeholder="Customer Email" required value={offlineForm.customer_email} onChange={(e) => setOfflineForm({...offlineForm, customer_email: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
+                    <label className="block text-zinc-400 mb-1">National Park</label>
+                    <select value={offlineForm.park_name} onChange={(e) => setOfflineForm({...offlineForm, park_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white">
+                      {parksList.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="block text-zinc-400 mb-1">Guests Count</label>
                     <input type="number" min={1} max={12} required value={offlineForm.guests_count} onChange={(e) => setOfflineForm({...offlineForm, guests_count: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
-                  </div>
-                  <div>
-                    <label className="block text-zinc-400 mb-1">Nationality & ID Type</label>
-                    <select value={offlineForm.nationality} onChange={(e) => setOfflineForm({...offlineForm, nationality: e.target.value, id_proof_type: e.target.value === "Indian" ? "Aadhaar Card" : "Passport"})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white">
-                      <option value="Indian">Indian (Aadhaar)</option>
-                      <option value="Non-Indian">Non-Indian (Passport)</option>
-                    </select>
                   </div>
                 </div>
 
@@ -600,7 +633,7 @@ export default function AdminDashboard() {
                 <input type="number" placeholder="Amount Paid in INR (₹)" required value={offlineForm.amount_paid_inr} onChange={(e) => setOfflineForm({...offlineForm, amount_paid_inr: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
 
                 <div className="border border-dashed border-white/20 p-3 rounded-xl text-center space-y-1">
-                  <p className="text-zinc-300 font-semibold">Attach {offlineForm.nationality === "Indian" ? "Aadhaar" : "Passport"} ID Copy</p>
+                  <p className="text-zinc-300 font-semibold">Attach ID Copy</p>
                   <input type="file" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, "id_proof_base64")} className="block w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:bg-orange-500 file:text-black file:font-bold" />
                 </div>
 
