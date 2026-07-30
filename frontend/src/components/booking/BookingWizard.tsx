@@ -16,6 +16,38 @@ declare global {
   }
 }
 
+// Client-side Image Compressor to fit under Firestore 1MB limits
+const compressImage = (file: File, maxWidth = 1000, quality = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 export default function BookingWizard({ packages = [], cars = [] }: any) {
   const [step, setStep] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -30,7 +62,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
     package_id: packages[0]?.id || "",
     car_id: cars[0]?.id || "",
     booking_date: new Date().toISOString().split("T")[0],
-    safari_slot: "Morning Safari", // "Morning Safari" | "Evening Safari" | "Full Day / Both Safaris"
+    safari_slot: "Morning Safari",
     customer_name: "",
     customer_email: "",
     customer_phone: "",
@@ -116,14 +148,15 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
 
   const availableDatesList = get365AvailableDates();
 
-  const handleIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, id_proof_base64: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImage(file, 1000, 0.7);
+        setFormData((prev) => ({ ...prev, id_proof_base64: compressedBase64 }));
+      } catch (err) {
+        console.error("Image compression error:", err);
+      }
     }
   };
 
@@ -153,18 +186,34 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
         description: `${selectedPkg.title} (${formData.safari_slot})`,
         order_id: orderData.order_id,
         handler: async function (response: any) {
-          await submitBooking({
-            ...formData,
-            park_name: selectedParkName,
-            package_title: selectedPkg.title,
-            car_name: selectedCar,
-            payment_status: formData.payment_type,
-            amount_paid_inr: payableAmount,
-            user_uid: currentUser.uid,
-            razorpay_payment_id: response.razorpay_payment_id || "demo_pay_id",
+          // Verify Payment Signature Server-Side BEFORE writing to Cloud Firestore
+          const verifyRes = await fetch("/api/payment/verify-signature", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
           });
-          setPaymentSuccess(true);
-          setSubmitted(true);
+          const verifyData = await verifyRes.json();
+
+          if (verifyData.success) {
+            await submitBooking({
+              ...formData,
+              park_name: selectedParkName,
+              package_title: selectedPkg.title,
+              car_name: selectedCar,
+              payment_status: formData.payment_type,
+              amount_paid_inr: payableAmount,
+              user_uid: currentUser.uid,
+              razorpay_payment_id: response.razorpay_payment_id || "demo_pay_id",
+            });
+            setPaymentSuccess(true);
+            setSubmitted(true);
+          } else {
+            alert("Payment verification failed. Please contact support.");
+          }
         },
         prefill: {
           name: formData.customer_name,
@@ -289,7 +338,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div key="step1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
-                  {/* Select National Park */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <MapPin className="w-4 h-4 text-orange-500" /> Select National Park
@@ -308,7 +356,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </select>
                   </div>
 
-                  {/* Choose Safari Timing Slot */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <Clock className="w-4 h-4 text-orange-500" /> Choose Safari Timing Slot
@@ -355,7 +402,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </div>
                   </div>
 
-                  {/* Choose Package */}
                   {filteredPackages.length > 0 && (
                     <div>
                       <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Tour Package ({selectedParkName})</label>
@@ -371,7 +417,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </div>
                   )}
 
-                  {/* Choose Vehicle */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Transfer Vehicle</label>
                     <select
@@ -385,7 +430,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </select>
                   </div>
 
-                  {/* Travelers Count */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-orange-500" /> Number of Travelers (Persons)
@@ -409,7 +453,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
 
               {step === 2 && (
                 <motion.div key="step2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
-                  {/* Scrollable 365-Day Select Dropdown */}
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                       <CalendarIcon className="w-4 h-4 text-orange-500" /> Choose Available Date (Scrollable 365 Days)

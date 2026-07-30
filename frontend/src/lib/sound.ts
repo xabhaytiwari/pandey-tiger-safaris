@@ -1,6 +1,25 @@
 class TypewriterSound {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
+  private isUnlocked: boolean = false;
+
+  constructor() {
+    if (typeof window !== "undefined") {
+      const unlockAudio = () => {
+        this.initCtx();
+        if (this.ctx && this.ctx.state === "suspended") {
+          this.ctx.resume().then(() => {
+            this.isUnlocked = true;
+          });
+        }
+        window.removeEventListener("click", unlockAudio);
+        window.removeEventListener("touchstart", unlockAudio);
+      };
+
+      window.addEventListener("click", unlockAudio, { once: true });
+      window.addEventListener("touchstart", unlockAudio, { once: true });
+    }
+  }
 
   private initCtx() {
     if (!this.ctx && typeof window !== "undefined") {
@@ -23,7 +42,6 @@ class TypewriterSound {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
-      // Triangle wave + 5x higher gain (0.08) for rich, substantial mechanical click sound
       osc.type = "triangle";
       osc.frequency.setValueAtTime(850 + Math.random() * 250, this.ctx.currentTime);
 
@@ -36,7 +54,7 @@ class TypewriterSound {
       osc.start();
       osc.stop(this.ctx.currentTime + 0.05);
     } catch (e) {
-      // Ignore browser autoplay restrictions until interaction
+      // Ignore initial browser restriction warnings
     }
   }
 

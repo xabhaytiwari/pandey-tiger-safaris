@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
-// Timing-safe comparison to prevent timing attacks
 function timingSafeCheck(a: string, b: string) {
   try {
     const bufA = Buffer.from(a);
@@ -20,7 +19,6 @@ export async function POST(req: Request) {
     const expectedUsername = process.env.ADMIN_USERNAME || "dinesh_pandey";
     const expectedPassword = process.env.ADMIN_PASSWORD || "PandeyTiger@2026#";
 
-    // 1. Server-side timing-safe credentials check
     const isUsernameValid = timingSafeCheck(username || "", expectedUsername);
     const isPasswordValid = timingSafeCheck(password || "", expectedPassword);
 
@@ -31,10 +29,13 @@ export async function POST(req: Request) {
     const targetEmail = "singhabhaytiwari@gmail.com";
     const apiKey = process.env.RESEND_API_KEY;
 
-    // 2. Generate 6-digit OTP on server
+    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 3. Send 2FA Email via Resend
+    // Hash OTP with SHA-256 before setting in HTTP-only cookie
+    const secretPepper = process.env.RAZORPAY_KEY_SECRET || "pandey_tiger_secret_pepper";
+    const otpHash = crypto.createHmac("sha256", secretPepper).update(otp).digest("hex");
+
     if (apiKey) {
       await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -60,14 +61,12 @@ export async function POST(req: Request) {
       });
     }
 
-    // 4. Return success response without exposing OTP
     const response = NextResponse.json({
       success: true,
       message: `2FA Verification Code dispatched to ${targetEmail}`,
     });
 
-    // Store server-side encrypted OTP cookie for verification (5 min expiry)
-    response.cookies.set("admin_otp_hash", Buffer.from(otp).toString("base64"), {
+    response.cookies.set("admin_otp_hash", otpHash, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 300,
