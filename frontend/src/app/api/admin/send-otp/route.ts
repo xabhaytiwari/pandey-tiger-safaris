@@ -1,6 +1,33 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
+// Rate Limiter: Max 3 OTP requests per 2 minutes per IP
+const rateLimitMap = new Map<string, { count: number; firstReset: number }>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 2 * 60 * 1000; // 2 minutes
+  const maxRequests = 3;
+
+  const record = rateLimitMap.get(ip);
+  if (!record) {
+    rateLimitMap.set(ip, { count: 1, firstReset: now + windowMs });
+    return false;
+  }
+
+  if (now > record.firstReset) {
+    rateLimitMap.set(ip, { count: 1, firstReset: now + windowMs });
+    return false;
+  }
+
+  if (record.count >= maxRequests) {
+    return true;
+  }
+
+  record.count += 1;
+  return false;
+}
+
 function timingSafeCheck(a: string, b: string) {
   try {
     const bufA = Buffer.from(a);
@@ -12,7 +39,6 @@ function timingSafeCheck(a: string, b: string) {
   }
 }
 
-// Mask email for UI display (e.g. si***ri@gmail.com)
 function maskEmail(email: string) {
   const [name, domain] = email.split("@");
   if (name.length <= 2) return `${name}***@${domain}`;
@@ -21,6 +47,16 @@ function maskEmail(email: string) {
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
+
+    // Enforce Rate Limiting
+    if (isRateLimited(ip)) {
+      return NextResponse.json(
+        { success: false, error: "Too many 2FA OTP requests. Please wait 2 minutes." },
+        { status: 429 }
+      );
+    }
+
     const { username, password } = await req.json();
 
     const expectedUsername = process.env.ADMIN_USERNAME || "dinesh_pandey";

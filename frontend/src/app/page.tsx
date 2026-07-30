@@ -7,6 +7,8 @@ import TypewriterHero from "../components/ui/TypewriterHero";
 import TigerGallery from "../components/ui/TigerGallery";
 import GallerySlideshow from "../components/ui/GallerySlideshow";
 import ReviewMarquee from "../components/ui/ReviewMarquee";
+import LiveSightingTicker from "../components/ui/LiveSightingTicker";
+import ZoneGuide from "../components/sections/ZoneGuide";
 import { fetchFromAPI } from "../lib/api";
 import { Compass, Sparkles, ArrowRight, Car, Users, Zap } from "lucide-react";
 
@@ -51,10 +53,13 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-black text-white overflow-x-hidden">
-      {/* End-to-End Screen Width Hero Section */}
+      {/* Live Jungle Sightings Ticker Bar */}
+      <LiveSightingTicker />
+
+      {/* Hero Section */}
       <section className="relative w-screen left-1/2 right-1/2 -mx-[50vw] pt-28 pb-20 md:pt-36 md:pb-28 flex flex-col items-center text-center overflow-hidden min-h-[85vh] justify-center">
         
-        {/* Full-Bleed Autoplay Background Image Carousel */}
+        {/* Full-Bleed Background Carousel */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.img
@@ -130,12 +135,15 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* Bandhavgarh Safari Zone Guide */}
+      <ZoneGuide />
+
       {/* Royal Bengal Tiger Photography Showcase */}
       <div className="max-w-6xl mx-auto px-4">
         <TigerGallery />
       </div>
 
-      {/* Infinite Guest Testimonials Marquee */}
+      {/* Guest Testimonials Marquee */}
       <ReviewMarquee reviews={reviews} />
 
       {/* Real Owner & Fleet Slideshow */}
