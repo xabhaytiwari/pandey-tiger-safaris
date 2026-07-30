@@ -7,7 +7,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import AuthModal from "../../components/auth/AuthModal";
 import { 
   Calendar, Ticket, User, MapPin, Clock, CreditCard, CheckCircle2, 
-  MessageSquare, Phone, Lock, LogIn, ArrowRight, ShieldCheck, Car, Users
+  MessageSquare, Phone, Lock, LogIn, ArrowRight, ShieldCheck, Car, Users, Printer
 } from "lucide-react";
 
 export default function MyBookingsPage() {
@@ -17,7 +17,6 @@ export default function MyBookingsPage() {
   const [customReqs, setCustomReqs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Monitor Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -30,13 +29,11 @@ export default function MyBookingsPage() {
     return () => unsubscribe();
   }, []);
 
-  // Real-time Firestore query for current user's bookings & custom requests
   useEffect(() => {
     if (!currentUser) return;
 
     setLoading(true);
 
-    // Query bookings belonging to current user
     const qBookings = query(
       collection(db, "bookings"),
       where("user_uid", "==", currentUser.uid)
@@ -51,7 +48,6 @@ export default function MyBookingsPage() {
       setLoading(false);
     });
 
-    // Query custom requests belonging to current user
     const qCustom = query(
       collection(db, "custom_packages"),
       where("user_uid", "==", currentUser.uid)
@@ -70,18 +66,58 @@ export default function MyBookingsPage() {
     };
   }, [currentUser]);
 
+  const handlePrintVoucher = (booking: any) => {
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Safari Pass Voucher - ${booking.id}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 40px; color: #000; }
+              .card { border: 2px solid #000; padding: 30px; border-radius: 12px; max-width: 600px; margin: 0 auto; }
+              .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+              .row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
+              .bold { font-weight: bold; }
+              .footer { text-align: center; margin-top: 30px; font-size: 12px; border-top: 1px solid #ccc; padding-top: 15px; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div class="header">
+                <h2>PANDEY TIGER SAFARIS</h2>
+                <p>Official Gate Permit Voucher • Bandhavgarh & MP Reserves</p>
+              </div>
+              <div class="row"><span>Guest Name:</span><span class="bold">${booking.customer_name}</span></div>
+              <div class="row"><span>National Park:</span><span class="bold">${booking.park_name || "Bandhavgarh"}</span></div>
+              <div class="row"><span>Safari Date:</span><span class="bold">${booking.booking_date}</span></div>
+              <div class="row"><span>Safari Timing:</span><span class="bold">${booking.safari_slot || "Morning Safari"}</span></div>
+              <div class="row"><span>Travelers Count:</span><span class="bold">${booking.guests_count || 2} Persons (${booking.nationality || "Indian"})</span></div>
+              <div class="row"><span>Vehicle Assigned:</span><span class="bold">${booking.car_name || "Safari Jeep"}</span></div>
+              <div class="row"><span>Payment Status:</span><span class="bold">${booking.payment_status || "Advance Paid"} (Paid: ₹${booking.amount_paid_inr})</span></div>
+              ${booking.balance_due_inr > 0 ? `<div class="row"><span>Balance Due on Arrival:</span><span class="bold">₹${booking.balance_due_inr}</span></div>` : ''}
+              <div class="footer">
+                <p>Present this voucher at Tala Gate HQ to Dinesh Pandey (+91 9425331205)</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
   return (
     <main className="min-h-screen max-w-5xl mx-auto px-6 py-12 space-y-12">
-      {/* Header Bar */}
       <div className="space-y-3 text-center max-w-2xl mx-auto">
         <span className="text-xs font-mono uppercase tracking-widest text-orange-500 font-bold flex items-center justify-center gap-1.5">
           <Ticket className="w-4 h-4" /> Guest Portal
         </span>
         <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">My Safari Bookings</h1>
-        <p className="text-zinc-400 text-sm">View your confirmed safari permits, payment receipts, and travel itineraries.</p>
+        <p className="text-zinc-400 text-sm">View your confirmed safari permits, payment receipts, and print gate entry vouchers.</p>
       </div>
 
-      {/* 1. Unauthenticated Guard State */}
       {!currentUser && !loading && (
         <div className="bg-zinc-950 border border-white/10 rounded-3xl p-8 md:p-12 text-center max-w-xl mx-auto space-y-6 shadow-2xl">
           <div className="w-16 h-16 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center mx-auto text-orange-500">
@@ -104,10 +140,8 @@ export default function MyBookingsPage() {
         </div>
       )}
 
-      {/* 2. Authenticated User Booking History View */}
       {currentUser && (
         <div className="space-y-10">
-          {/* User Account Banner */}
           <div className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-500 font-bold text-sm">
@@ -124,7 +158,6 @@ export default function MyBookingsPage() {
             </span>
           </div>
 
-          {/* Reserved Safaris List */}
           <section className="space-y-6">
             <h2 className="text-2xl font-extrabold text-white flex items-center gap-2">
               <Calendar className="w-6 h-6 text-orange-500" /> Confirmed Safari Permits ({bookings.length})
@@ -177,11 +210,22 @@ export default function MyBookingsPage() {
                           <p className="col-span-2 flex items-center gap-1 pt-1 text-zinc-300 border-t border-white/5">
                             <CreditCard className="w-3.5 h-3.5 text-emerald-400" /> Amount Paid: <strong>₹{booking.amount_paid_inr?.toLocaleString("en-IN") || "Prepaid"}</strong>
                           </p>
+                          {booking.balance_due_inr > 0 && (
+                            <p className="col-span-2 text-amber-400 font-bold pt-1">
+                              Balance Due on Arrival: ₹{booking.balance_due_inr.toLocaleString("en-IN")}
+                            </p>
+                          )}
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-                        <span className="text-[10px] font-mono text-zinc-500">ID: {booking.id.substring(0, 10)}...</span>
+                      <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => handlePrintVoucher(booking)}
+                          className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-3.5 py-2 rounded-full text-xs flex items-center gap-1.5 transition-all"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-orange-500" /> Print Gate Voucher
+                        </button>
+
                         <a
                           href={whatsappUrl}
                           target="_blank"
@@ -198,7 +242,6 @@ export default function MyBookingsPage() {
             )}
           </section>
 
-          {/* Custom Package Requests List */}
           {customReqs.length > 0 && (
             <section className="space-y-4 pt-4 border-t border-white/10">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
