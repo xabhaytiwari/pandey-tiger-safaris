@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchFromAPI } from "../../lib/api";
+import { triggerHaptic } from "../../lib/sound";
 import { Phone, MapPin, Award, Users, Sparkles, Pause, Play } from "lucide-react";
 
 export default function AboutPage() {
@@ -12,6 +13,7 @@ export default function AboutPage() {
     {
       id: 1,
       title: "TTF Travel & Tourism Fair, Kolkata",
+      isTTF: true, // Only TTF photo gets object-[center_20%]
       image_url: "/gallery/owner-1.jpg",
       fallback_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800",
       caption: "Dinesh Pandey at TTF Entry representing Pandey Tiger Safaris."
@@ -19,6 +21,7 @@ export default function AboutPage() {
     {
       id: 2,
       title: "Madhya Pradesh Tourism Pavilion",
+      isTTF: false,
       image_url: "/gallery/owner-2.jpg",
       fallback_url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800",
       caption: "Promoting Bandhavgarh & MP wildlife circuits at tourism expos."
@@ -26,6 +29,7 @@ export default function AboutPage() {
     {
       id: 3,
       title: "SATTE International Travel Exhibition",
+      isTTF: false,
       image_url: "/gallery/owner-3.jpg",
       fallback_url: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=800",
       caption: "Dinesh Pandey at SATTE Welcome Gate in Hall 9."
@@ -33,6 +37,7 @@ export default function AboutPage() {
     {
       id: 4,
       title: "Outdoors in Bandhavgarh Nature Circuit",
+      isTTF: false,
       image_url: "/gallery/owner-4.jpg",
       fallback_url: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800",
       caption: "On-field inspection of safari road routes and forest gates."
@@ -77,7 +82,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Autoplay Owner Photo Carousel with object-[center_20%] Framing */}
+        {/* Autoplay Owner Photo Carousel (TTF Photo is object-[center_20%], Others are object-center) */}
         <div 
           className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black group"
           onMouseEnter={() => setIsAutoPlaying(false)}
@@ -96,7 +101,9 @@ export default function AboutPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.5 }}
-                className="w-full h-full object-cover object-[center_20%]" 
+                className={`w-full h-full object-cover ${
+                  activePhoto.isTTF ? "object-[center_20%]" : "object-center"
+                }`}
               />
             </AnimatePresence>
 
@@ -104,8 +111,11 @@ export default function AboutPage() {
 
             <div className="absolute top-4 right-4 z-20">
               <button 
-                onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-                className="p-2.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-orange-400 hover:text-white transition-colors"
+                onClick={() => {
+                  triggerHaptic(12);
+                  setIsAutoPlaying(!isAutoPlaying);
+                }}
+                className="p-2.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-orange-400 hover:text-white transition-colors active:scale-95"
                 title={isAutoPlaying ? "Pause Autoplay" : "Play Autoplay"}
               >
                 {isAutoPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -134,8 +144,11 @@ export default function AboutPage() {
             {ownerPhotos.map((_, idx) => (
               <button
                 key={idx}
-                onClick={() => setCurrentPhotoIndex(idx)}
-                className={`h-1.5 rounded-full transition-all ${
+                onClick={() => {
+                  triggerHaptic(10);
+                  setCurrentPhotoIndex(idx);
+                }}
+                className={`h-1.5 rounded-full transition-all active:scale-95 ${
                   currentPhotoIndex === idx ? "w-6 bg-orange-500" : "w-1.5 bg-white/40"
                 }`}
               />

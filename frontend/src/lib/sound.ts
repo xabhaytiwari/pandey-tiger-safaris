@@ -1,25 +1,6 @@
 class TypewriterSound {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
-  private isUnlocked: boolean = false;
-
-  constructor() {
-    if (typeof window !== "undefined") {
-      const unlockAudio = () => {
-        this.initCtx();
-        if (this.ctx && this.ctx.state === "suspended") {
-          this.ctx.resume().then(() => {
-            this.isUnlocked = true;
-          });
-        }
-        window.removeEventListener("click", unlockAudio);
-        window.removeEventListener("touchstart", unlockAudio);
-      };
-
-      window.addEventListener("click", unlockAudio, { once: true });
-      window.addEventListener("touchstart", unlockAudio, { once: true });
-    }
-  }
 
   private initCtx() {
     if (!this.ctx && typeof window !== "undefined") {
@@ -65,3 +46,14 @@ class TypewriterSound {
 }
 
 export const typewriterSound = new TypewriterSound();
+
+// Tactile Mobile Haptic Feedback Helper
+export const triggerHaptic = (pattern: number | number[] = 12) => {
+  if (typeof window !== "undefined" && "vibrate" in navigator) {
+    try {
+      navigator.vibrate(pattern);
+    } catch {
+      // Ignore unsupported browsers/devices
+    }
+  }
+};

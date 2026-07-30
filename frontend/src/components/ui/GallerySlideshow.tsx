@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Sparkles, Pause, Play } from "lucide-react";
+import { triggerHaptic } from "../../lib/sound";
 
 export default function GallerySlideshow() {
   const slides = [
@@ -10,7 +11,7 @@ export default function GallerySlideshow() {
       id: 1,
       title: "Dinesh Pandey at TTF Travel & Tourism Fair",
       category: "Industry Events",
-      isOwner: true,
+      isTTF: true, // Only TTF photo uses top-weighted crop
       image_url: "/gallery/owner-1.jpg",
       fallback_url: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=1200",
       caption: "Business owner Dinesh Pandey representing Pandey Tiger Safaris at TTF Kolkata Entry."
@@ -19,7 +20,7 @@ export default function GallerySlideshow() {
       id: 2,
       title: "Full Vehicle Fleet Lined Up with Drivers",
       category: "Real Fleet Showcase",
-      isOwner: false,
+      isTTF: false,
       image_url: "/gallery/fleet-1.jpg",
       fallback_url: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=1200",
       caption: "Our Toyota Innovas, Force Travellers, and AC Sedans lined up with uniformed drivers."
@@ -28,7 +29,7 @@ export default function GallerySlideshow() {
       id: 3,
       title: "Dinesh Pandey at Madhya Pradesh Tourism Stall",
       category: "Tourism Expos",
-      isOwner: true,
+      isTTF: false,
       image_url: "/gallery/owner-2.jpg",
       fallback_url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=1200",
       caption: "Promoting Bandhavgarh National Park tiger safari circuits at MP Tourism expo."
@@ -37,7 +38,7 @@ export default function GallerySlideshow() {
       id: 4,
       title: "Fleet Preparation & Maintenance",
       category: "Real Fleet Showcase",
-      isOwner: false,
+      isTTF: false,
       image_url: "/gallery/fleet-2.jpg",
       fallback_url: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=1200",
       caption: "Complete transport lineup prepared for railway station and airport guest transfers."
@@ -46,7 +47,7 @@ export default function GallerySlideshow() {
       id: 5,
       title: "SATTE International Travel Exhibition",
       category: "National Travel Show",
-      isOwner: true,
+      isTTF: false,
       image_url: "/gallery/owner-3.jpg",
       fallback_url: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=1200",
       caption: "Dinesh Pandey at SATTE Welcome Gate in Hall 9."
@@ -55,7 +56,7 @@ export default function GallerySlideshow() {
       id: 6,
       title: "Pandey Tiger Safaris Fleet Lined Up at Station Grounds",
       category: "Real Fleet Showcase",
-      isOwner: false,
+      isTTF: false,
       image_url: "/gallery/fleet-3.jpg",
       fallback_url: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=1200",
       caption: "Our team of experienced drivers and immaculate vehicles ready for departure."
@@ -64,7 +65,7 @@ export default function GallerySlideshow() {
       id: 7,
       title: "Outdoors in Madhya Pradesh Nature Circuit",
       category: "Safari Grounds",
-      isOwner: true,
+      isTTF: false,
       image_url: "/gallery/owner-4.jpg",
       fallback_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1200",
       caption: "Dinesh Pandey on location during jungle road inspections."
@@ -83,10 +84,12 @@ export default function GallerySlideshow() {
   }, [isPlaying, slides.length]);
 
   const prevSlide = () => {
+    triggerHaptic(10);
     setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   };
 
   const nextSlide = () => {
+    triggerHaptic(10);
     setCurrentIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
   };
 
@@ -108,25 +111,28 @@ export default function GallerySlideshow() {
 
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => setIsPlaying(!isPlaying)} 
-            className="p-2.5 rounded-full bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-orange-400 transition-colors"
+            onClick={() => {
+              triggerHaptic(12);
+              setIsPlaying(!isPlaying);
+            }} 
+            className="p-2.5 rounded-full bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-orange-400 transition-colors active:scale-95"
             title={isPlaying ? "Pause Autoplay" : "Play Autoplay"}
           >
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
           </button>
-          <button onClick={prevSlide} className="p-2.5 rounded-full bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white transition-colors">
+          <button onClick={prevSlide} className="p-2.5 rounded-full bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white transition-colors active:scale-95">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <span className="text-xs font-mono text-zinc-400 font-bold px-2">
             {currentIndex + 1} / {slides.length}
           </span>
-          <button onClick={nextSlide} className="p-2.5 rounded-full bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white transition-colors">
+          <button onClick={nextSlide} className="p-2.5 rounded-full bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white transition-colors active:scale-95">
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      {/* Main Autoplay Slide - Owner photos use object-[center_20%], Fleet photos use object-center */}
+      {/* Main Slide: TTF Photo uses object-[center_20%], All other photos use object-center */}
       <div className="relative h-[420px] md:h-[520px] w-full rounded-2xl overflow-hidden group bg-black">
         <AnimatePresence mode="wait">
           <motion.img
@@ -141,7 +147,7 @@ export default function GallerySlideshow() {
             exit={{ opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.5 }}
             className={`w-full h-full object-cover ${
-              current.isOwner ? "object-[center_20%]" : "object-center"
+              current.isTTF ? "object-[center_20%]" : "object-center"
             }`}
           />
         </AnimatePresence>
@@ -172,8 +178,11 @@ export default function GallerySlideshow() {
         {slides.map((slide, idx) => (
           <button
             key={slide.id}
-            onClick={() => setCurrentIndex(idx)}
-            className={`relative h-16 rounded-xl overflow-hidden border transition-all ${
+            onClick={() => {
+              triggerHaptic(10);
+              setCurrentIndex(idx);
+            }}
+            className={`relative h-16 rounded-xl overflow-hidden border transition-all active:scale-95 ${
               currentIndex === idx ? "border-orange-500 ring-2 ring-orange-500 scale-105" : "border-white/10 opacity-50 hover:opacity-100"
             }`}
           >
@@ -184,7 +193,7 @@ export default function GallerySlideshow() {
               }}
               alt="Thumbnail"
               className={`w-full h-full object-cover ${
-                slide.isOwner ? "object-[center_20%]" : "object-center"
+                slide.isTTF ? "object-[center_20%]" : "object-center"
               }`}
             />
           </button>
