@@ -1,10 +1,17 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import WhatsAppConcierge from "../components/ui/WhatsAppConcierge";
 import CursorGlow from "../components/ui/CursorGlow";
 import ScrollProgress from "../components/ui/ScrollProgress";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Pandey Tiger Safaris | Bandhavgarh & MP Reserves",
@@ -51,14 +58,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <html lang="en" className="dark scroll-smooth">
+    <html lang="en" className={`dark scroll-smooth ${inter.variable}`}>
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="bg-black text-zinc-100 antialiased selection:bg-orange-500 selection:text-black overflow-x-hidden">
+      <body className={`${inter.className} bg-black text-zinc-100 antialiased selection:bg-orange-500 selection:text-black overflow-x-hidden transform-gpu`}>
         <ScrollProgress />
         <CursorGlow />
         <Navbar />

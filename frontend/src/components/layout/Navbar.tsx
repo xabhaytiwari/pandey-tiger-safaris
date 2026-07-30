@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, LogOut, Phone, Menu, X } from "lucide-react";
 import { auth, onAuthStateChanged, signOut } from "../../lib/firebase";
 import { triggerHaptic } from "../../lib/sound";
-import AuthModal from "../auth/AuthModal";
+
+// Dynamic Code-Splitting for Auth Modal to reduce initial JS bundle
+const AuthModal = dynamic(() => import("../auth/AuthModal"), { ssr: false });
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -175,7 +178,9 @@ export default function Navbar() {
         </AnimatePresence>
       </header>
 
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={(u: any) => setUser(u)} />
+      {isAuthOpen && (
+        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={(u: any) => setUser(u)} />
+      )}
     </>
   );
 }
