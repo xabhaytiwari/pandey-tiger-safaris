@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, CheckCircle2, LogOut, Calendar as CalendarIcon, User, Mail, Phone, 
   PlusCircle, Upload, Tag, X, FileText, Package, UserCheck, Star, MapPin, 
-  ChevronLeft, ChevronRight, Ban, Trash2, Archive, RotateCcw, FolderArchive, AlertCircle
+  ChevronLeft, ChevronRight, Ban, Trash2, Archive, RotateCcw, FolderArchive, AlertCircle, Car
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -26,6 +26,7 @@ export default function AdminDashboard() {
   const [packagesList, setPackagesList] = useState<any[]>([]);
   const [driversList, setDriversList] = useState<any[]>([]);
   const [parksList, setParksList] = useState<any[]>([]);
+  const [carsList, setCarsList] = useState<any[]>([]);
   const [blockedDatesList, setBlockedDatesList] = useState<any[]>([]);
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -36,6 +37,7 @@ export default function AdminDashboard() {
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
   const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
   const [isParkModalOpen, setIsParkModalOpen] = useState(false);
+  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [isBlockDateModalOpen, setIsBlockDateModalOpen] = useState(false);
   const [showArchivedPackages, setShowArchivedPackages] = useState(false);
 
@@ -48,6 +50,15 @@ export default function AdminDashboard() {
     name: "",
     state: "Madhya Pradesh",
     image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
+  });
+
+  // Vehicle Form State with Image File Upload
+  const [vehicleForm, setVehicleForm] = useState({
+    name: "",
+    category: "Premium SUV Transport",
+    capacity: 6,
+    description: "",
+    photo_base64: ""
   });
 
   const [packageForm, setPackageForm] = useState({
@@ -125,6 +136,10 @@ export default function AdminDashboard() {
       setParksList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    const unsubCars = onSnapshot(collection(db, "cars"), (snapshot) => {
+      setCarsList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     const unsubBlocked = onSnapshot(collection(db, "blocked_dates"), (snapshot) => {
       setBlockedDatesList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
@@ -135,6 +150,7 @@ export default function AdminDashboard() {
       unsubPackages();
       unsubDrivers();
       unsubParks();
+      unsubCars();
       unsubBlocked();
     };
   }, [authStep]);
@@ -188,6 +204,40 @@ export default function AdminDashboard() {
       setError("Verification failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVehiclePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setVehicleForm(prev => ({ ...prev, photo_base64: reader.result as string }));
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCreateVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, "cars"), {
+        name: vehicleForm.name,
+        category: vehicleForm.category,
+        capacity: Number(vehicleForm.capacity),
+        description: vehicleForm.description,
+        image_url: vehicleForm.photo_base64,
+        is_representative: false,
+        createdAt: serverTimestamp(),
+      });
+      setIsVehicleModalOpen(false);
+      setVehicleForm({
+        name: "",
+        category: "Premium SUV Transport",
+        capacity: 6,
+        description: "",
+        photo_base64: ""
+      });
+    } catch (err: any) {
+      alert("Error adding vehicle: " + err.message);
     }
   };
 
@@ -343,8 +393,8 @@ export default function AdminDashboard() {
               <div className="w-12 h-12 bg-orange-500/10 border border-orange-500/30 rounded-full flex items-center justify-center mx-auto text-orange-500">
                 <Shield className="w-6 h-6" />
               </div>
-              <h2 className="text-2xl font-bold">Owner Access Portal</h2>
-              <p className="text-zinc-400 text-xs">Pandey Tiger Safaris Restricted Area</p>
+              <h2 className="text-2xl font-bold">Pandey Tiger Safaris Owner Portal</h2>
+              <p className="text-zinc-400 text-xs">Restricted Access Area</p>
             </div>
 
             {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl">{error}</div>}
@@ -422,6 +472,10 @@ export default function AdminDashboard() {
                 <Ban className="w-3.5 h-3.5" /> Block Date
               </button>
 
+              <button onClick={() => setIsVehicleModalOpen(true)} className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-3.5 py-2 rounded-full text-xs flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-orange-500" /> + Add Vehicle
+              </button>
+
               <button onClick={() => setIsParkModalOpen(true)} className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-3.5 py-2 rounded-full text-xs flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-orange-500" /> + Add Park
               </button>
@@ -494,10 +548,115 @@ export default function AdminDashboard() {
             )}
           </section>
 
-          {/* Bookings List with Balance Due and ID Proofs */}
+          {/* Active Vehicles List */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Tag className="w-5 h-5 text-orange-500" /> Bookings, Prepayments & Balance Due ({filteredBookings.length})
+              <Car className="w-5 h-5 text-orange-500" /> Active Fleet Vehicles ({carsList.length})
+            </h2>
+            <div className="grid md:grid-cols-3 gap-4">
+              {carsList.map((c) => (
+                <div key={c.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex gap-4 text-xs items-center">
+                  <img src={c.image_url} alt={c.name} className="w-20 h-20 object-cover rounded-xl border border-white/10" />
+                  <div>
+                    <h4 className="font-bold text-white text-sm">{c.name}</h4>
+                    <p className="text-orange-400 font-bold">{c.category}</p>
+                    <p className="text-zinc-400">Capacity: {c.capacity || "Custom"} Persons</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Published Tour Packages */}
+          <section className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Package className="w-5 h-5 text-orange-500" /> Tour Packages ({activePackages.length} Active)
+              </h2>
+
+              {archivedPackages.length > 0 && (
+                <button 
+                  onClick={() => setShowArchivedPackages(!showArchivedPackages)}
+                  className="text-xs bg-zinc-900 border border-white/10 hover:border-amber-500/50 px-3 py-1.5 rounded-full text-amber-400 font-semibold flex items-center gap-1.5"
+                >
+                  <FolderArchive className="w-3.5 h-3.5" />
+                  {showArchivedPackages ? "Hide Archived Packages" : `View Archived Packages (${archivedPackages.length})`}
+                </button>
+              )}
+            </div>
+
+            {activePackages.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No active packages published yet. Click &quot;+ Add Package&quot; to publish one.</p>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {activePackages.map((p) => (
+                  <div key={p.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex gap-4 text-xs justify-between items-start">
+                    <div className="flex gap-4">
+                      <img src={p.image_url} alt={p.title} className="w-24 h-24 object-cover rounded-xl" />
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-orange-400 font-bold uppercase">{p.park_name || "Bandhavgarh"}</span>
+                          <span className="text-[10px] text-amber-400 font-bold border border-amber-500/30 px-2 py-0.5 rounded-full">{p.hotel_stars || "5-Star Resort"}</span>
+                        </div>
+                        <h4 className="font-bold text-white text-sm">{p.title}</h4>
+                        <p className="text-orange-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => handleArchivePackage(p.id)}
+                      className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all"
+                    >
+                      <Archive className="w-3.5 h-3.5" /> Archive
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {showArchivedPackages && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-4 space-y-3 border-t border-white/10">
+                <h3 className="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+                  <FolderArchive className="w-4 h-4" /> Archived Packages ({archivedPackages.length})
+                </h3>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {archivedPackages.map((p) => (
+                    <div key={p.id} className="bg-zinc-950/80 border border-amber-500/20 rounded-2xl p-4 flex gap-4 text-xs justify-between items-start opacity-85">
+                      <div className="flex gap-4">
+                        <img src={p.image_url} alt={p.title} className="w-20 h-20 object-cover rounded-xl grayscale" />
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-zinc-500 font-bold uppercase">{p.park_name || "Bandhavgarh"} (Archived)</span>
+                          <h4 className="font-bold text-zinc-300 text-sm">{p.title}</h4>
+                          <p className="text-zinc-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 items-end">
+                        <button 
+                          onClick={() => handleUnarchivePackage(p.id)}
+                          className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1"
+                        >
+                          <RotateCcw className="w-3 h-3" /> Restore
+                        </button>
+                        <button 
+                          onClick={() => handleDeletePackagePermanently(p.id)}
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </section>
+
+          {/* Bookings List */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Tag className="w-5 h-5 text-orange-500" /> Bookings & ID Proofs ({filteredBookings.length})
             </h2>
 
             {filteredBookings.length === 0 ? (
@@ -514,11 +673,9 @@ export default function AdminDashboard() {
                     <div className="grid grid-cols-2 gap-2 text-zinc-400 border-y border-white/5 py-2">
                       <p>Park: <strong className="text-white">{b.park_name || "Bandhavgarh"}</strong></p>
                       <p>Slot: <strong className="text-orange-400">{b.safari_slot || "Morning Safari"}</strong></p>
-                      <p>Travelers: <strong className="text-white">{b.guests_count || 2} Persons</strong> ({b.nationality || "Indian"})</p>
+                      <p>Travelers: <strong className="text-white">{b.guests_count || 2} Persons</strong></p>
                       <p>Vehicle: <strong className="text-zinc-200">{b.car_name || b.car_id}</strong></p>
-                      <p className="col-span-2">Paid Now: <strong className="text-emerald-400 uppercase">₹{b.amount_paid_inr?.toLocaleString("en-IN") || 0}</strong> ({b.payment_status || "Advance Paid"})</p>
-                      
-                      {/* Balance Due Notification for Dinesh Pandey */}
+                      <p className="col-span-2">Payment: <strong className="text-amber-400 uppercase">{b.payment_status || "Advance Paid"}</strong> ({b.amount_paid_inr ? `₹${b.amount_paid_inr.toLocaleString("en-IN")}` : "Prepaid"})</p>
                       {b.balance_due_inr > 0 && (
                         <p className="col-span-2 text-amber-400 font-extrabold flex items-center gap-1 bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
                           <AlertCircle className="w-3.5 h-3.5" /> Collect Balance on Arrival at HQ: ₹{b.balance_due_inr.toLocaleString("en-IN")}
@@ -550,6 +707,52 @@ export default function AdminDashboard() {
           </section>
         </div>
       )}
+
+      {/* Add Vehicle Modal with Photo Upload */}
+      <AnimatePresence>
+        {isVehicleModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-lg rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
+                  <Car className="w-5 h-5" /> Add New Fleet Vehicle
+                </h3>
+                <button onClick={() => setIsVehicleModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreateVehicle} className="space-y-3 text-xs">
+                <input type="text" placeholder="Vehicle Name (e.g. Mahindra Thar 4x4)" required value={vehicleForm.name} onChange={(e) => setVehicleForm({...vehicleForm, name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" placeholder="Category (e.g. Premium Safari 4x4)" required value={vehicleForm.category} onChange={(e) => setVehicleForm({...vehicleForm, category: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                  <input type="number" placeholder="Seating Capacity (e.g. 6)" required value={vehicleForm.capacity} onChange={(e) => setVehicleForm({...vehicleForm, capacity: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <textarea placeholder="Vehicle Description" rows={3} required value={vehicleForm.description} onChange={(e) => setVehicleForm({...vehicleForm, description: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white"></textarea>
+
+                <div className="border border-dashed border-white/20 p-4 rounded-xl text-center space-y-2">
+                  <Upload className="w-6 h-6 text-orange-500 mx-auto" />
+                  <p className="text-zinc-300 font-semibold">Upload Vehicle Photo</p>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    required 
+                    onChange={handleVehiclePhotoUpload} 
+                    className="block w-full text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:bg-orange-500 file:text-black file:font-bold hover:file:bg-orange-400 cursor-pointer" 
+                  />
+                  {vehicleForm.photo_base64 && (
+                    <img src={vehicleForm.photo_base64} alt="Vehicle Preview" className="w-32 h-20 object-cover mx-auto rounded-xl border border-orange-500/50 mt-2" />
+                  )}
+                </div>
+
+                <button type="submit" disabled={!vehicleForm.photo_base64} className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all disabled:opacity-50">
+                  Save Vehicle to Fleet
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Add Tour Package Modal */}
       <AnimatePresence>
@@ -605,6 +808,108 @@ export default function AdminDashboard() {
 
                 <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all">
                   Publish Package to Cloud
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add National Park Modal */}
+      <AnimatePresence>
+        {isParkModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
+                  <MapPin className="w-5 h-5" /> Add National Park
+                </h3>
+                <button onClick={() => setIsParkModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreatePark} className="space-y-3 text-xs">
+                <input type="text" placeholder="Park Name (e.g. Satpura National Park)" required value={parkForm.name} onChange={(e) => setParkForm({...parkForm, name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                <input type="text" placeholder="State (e.g. Madhya Pradesh)" required value={parkForm.state} onChange={(e) => setParkForm({...parkForm, state: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                <input type="url" placeholder="Park Image URL" required value={parkForm.image_url} onChange={(e) => setParkForm({...parkForm, image_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+
+                <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3 rounded-xl text-sm hover:bg-orange-400 transition-all">
+                  Save National Park
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Driver Modal */}
+      <AnimatePresence>
+        {isDriverModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-lg rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
+                  <UserCheck className="w-5 h-5" /> Register Safari Driver
+                </h3>
+                <button onClick={() => setIsDriverModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreateDriver} className="space-y-3 text-xs">
+                <input type="text" placeholder="Driver Full Name" required value={driverForm.name} onChange={(e) => setDriverForm({...driverForm, name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="number" placeholder="Experience Years" required value={driverForm.experience_years} onChange={(e) => setDriverForm({...driverForm, experience_years: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                  <input type="number" step="0.1" max="5.0" placeholder="Rating" required value={driverForm.rating} onChange={(e) => setDriverForm({...driverForm, rating: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <div className="border border-dashed border-white/20 p-4 rounded-xl text-center space-y-2">
+                  <Upload className="w-6 h-6 text-orange-500 mx-auto" />
+                  <p className="text-zinc-300 font-semibold">Upload Driver Photo</p>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    required 
+                    onChange={handleDriverPhotoUpload} 
+                    className="block w-full text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:bg-orange-500 file:text-black file:font-bold hover:file:bg-orange-400 cursor-pointer" 
+                  />
+                  {driverForm.photo_base64 && (
+                    <img src={driverForm.photo_base64} alt="Driver Preview" className="w-20 h-20 object-cover mx-auto rounded-full border border-orange-500/50 mt-2" />
+                  )}
+                </div>
+
+                <button type="submit" disabled={!driverForm.photo_base64} className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all disabled:opacity-50">
+                  Register Driver
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Block Date Modal */}
+      <AnimatePresence>
+        {isBlockDateModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-red-500/30 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-red-400 flex items-center gap-2">
+                  <Ban className="w-5 h-5" /> Block / Exclude Safari Date
+                </h3>
+                <button onClick={() => setIsBlockDateModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleBlockDateSubmit} className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-zinc-400 mb-1">Date to Block</label>
+                  <input type="date" required value={blockForm.date} onChange={(e) => setBlockForm({...blockForm, date: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <div>
+                  <label className="block text-zinc-400 mb-1">Reason for Exclusion</label>
+                  <input type="text" placeholder="e.g. Park Maintenance / Holiday / Private Group" required value={blockForm.reason} onChange={(e) => setBlockForm({...blockForm, reason: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <button type="submit" className="w-full bg-red-500 text-white font-extrabold py-3.5 rounded-xl text-sm hover:bg-red-600 transition-all">
+                  Exclude Date from Booking Dropdown
                 </button>
               </form>
             </motion.div>

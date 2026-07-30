@@ -111,7 +111,6 @@ export async function fetchFromAPI(endpoint: string) {
       return getCollectionData("parks", SEED_DATA.parks);
     case "/packages":
       const allPkgs: any[] = await getCollectionData("packages", SEED_DATA.packages);
-      // Filter out archived packages for public website API calls
       return Array.isArray(allPkgs) ? allPkgs.filter((p: any) => !p.is_archived) : [];
     case "/cars":
       return getCollectionData("cars", SEED_DATA.cars);
@@ -199,6 +198,18 @@ export async function addTourPackage(payload: any) {
       createdAt: serverTimestamp(),
     });
     return { status: "success", package_id: docRef.id };
+  } catch (error: any) {
+    return { status: "error", message: error.message };
+  }
+}
+
+export async function addVehicle(payload: any) {
+  try {
+    const docRef = await addDoc(collection(db, "cars"), {
+      ...payload,
+      createdAt: serverTimestamp(),
+    });
+    return { status: "success", vehicle_id: docRef.id };
   } catch (error: any) {
     return { status: "error", message: error.message };
   }

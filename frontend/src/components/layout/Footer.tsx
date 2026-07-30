@@ -6,9 +6,11 @@ export default function Footer() {
     <footer className="bg-black border-t border-white/10 py-16 text-zinc-400 text-xs font-sans">
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="space-y-3">
-          <h4 className="text-white font-bold text-sm">Pandey Tiger Safaris</h4>
+          <h4 className="text-white font-extrabold text-base tracking-widest bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent">
+            PANTIGRIS ROYALE
+          </h4>
           <p className="text-zinc-500 leading-relaxed">
-            Premier tour and travel management in Bandhavgarh National Park operated by business owner Dinesh Pandey. Complete packages, luxury vehicle fleet, and an army of expert licensed guides.
+            Premier tour and travel management across Madhya Pradesh reserves operated by business owner Dinesh Pandey. Complete packages, luxury vehicle fleet, and an army of expert licensed guides.
           </p>
         </div>
 
@@ -28,7 +30,7 @@ export default function Footer() {
             <li><Link href="/my-bookings" className="hover:text-white">My Safari Bookings</Link></li>
             <li><Link href="/about" className="hover:text-white">Dinesh Pandey Profile</Link></li>
             <li><Link href="/contact" className="hover:text-white">Bandhavgarh HQ</Link></li>
-            <li><Link href="/admin" className="hover:text-white">Owner Dashboard</Link></li>
+            <li><Link href="/admin" className="hover:text-white">Owner Portal</Link></li>
           </ul>
         </div>
 
@@ -47,7 +49,7 @@ export default function Footer() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 mt-12 pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-zinc-600">
-        <p>© {new Date().getFullYear()} Pandey Tiger Safaris. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} PANTIGRIS Royale. All rights reserved.</p>
         <p>Headquarters: Tala Gate, Bandhavgarh, MP, India</p>
       </div>
     </footer>

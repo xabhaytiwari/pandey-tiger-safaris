@@ -7,7 +7,7 @@ import { auth, onAuthStateChanged } from "../../lib/firebase";
 import AuthModal from "../auth/AuthModal";
 import { 
   Calendar as CalendarIcon, CheckCircle2, MessageSquare, Phone, CreditCard, ShieldCheck, 
-  Users, Upload, Globe, User, MapPin, Info, Lock, LogIn, Sun, Sunset, Clock, AlertTriangle, FileText
+  Users, Upload, Globe, User, MapPin, Info, Lock, LogIn, Sun, Sunset, Clock, AlertTriangle
 } from "lucide-react";
 
 declare global {
@@ -89,15 +89,16 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
   const filteredPackages = packages.filter((p: any) => !p.park_name || p.park_name === selectedParkName);
   const selectedPkg = filteredPackages.find((p: any) => p.id === formData.package_id) || filteredPackages[0] || { title: "National Park Safari", price_inr: 28500 };
   
-  // BUSINESS LOGIC FIX 1: Filter vehicles based on passenger capacity
-  const suitableCars = cars.filter((c: any) => c.capacity === 0 || c.capacity >= formData.guests_count);
-  const selectedCar = cars.find((c: any) => c.id === formData.car_id)?.name || suitableCars[0]?.name || "Safari Vehicle";
+  const selectedCarObj = cars.find((c: any) => c.id === formData.car_id) || cars[0] || { name: "Safari Jeep", capacity: 6 };
+  const selectedCarName = selectedCarObj.name;
+  const singleCarCap = selectedCarObj.capacity || 6;
 
-  // BUSINESS LOGIC FIX 2: Foreigner Forest Permit Surcharge (+₹4,500 per foreign national for MP Forest Dept fees)
+  // MULTI-VEHICLE CALCULATION: Calculate required vehicle count if guests > vehicle capacity
+  const requiredVehicleCount = singleCarCap > 0 ? Math.ceil(formData.guests_count / singleCarCap) : 1;
+
   const foreignerSurcharge = formData.nationality === "Non-Indian" ? formData.guests_count * 4500 : 0;
   const totalPriceINR = (selectedPkg.price_inr || 28500) + foreignerSurcharge;
 
-  // BUSINESS LOGIC FIX 3: Balance Due Calculation
   const advanceAmount = Math.round(totalPriceINR * 0.25);
   const payableAmount = formData.payment_type === "Advance Paid" ? advanceAmount : totalPriceINR;
   const balanceDueINR = totalPriceINR - payableAmount;
@@ -172,7 +173,8 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
             ...formData,
             park_name: selectedParkName,
             package_title: selectedPkg.title,
-            car_name: selectedCar,
+            car_name: `${requiredVehicleCount}x ${selectedCarName}`,
+            vehicle_count: requiredVehicleCount,
             total_price_inr: totalPriceINR,
             payment_status: formData.payment_type,
             amount_paid_inr: payableAmount,
@@ -201,7 +203,8 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
           ...formData,
           park_name: selectedParkName,
           package_title: selectedPkg.title,
-          car_name: selectedCar,
+          car_name: `${requiredVehicleCount}x ${selectedCarName}`,
+          vehicle_count: requiredVehicleCount,
           total_price_inr: totalPriceINR,
           payment_status: formData.payment_type,
           amount_paid_inr: payableAmount,
@@ -228,7 +231,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
     `*Travelers:* ${formData.guests_count} Persons\n` +
     `*Nationality:* ${formData.nationality} (${formData.id_proof_type})\n` +
     `*Package:* ${selectedPkg.title}\n` +
-    `*Vehicle:* ${selectedCar}\n` +
+    `*Vehicle:* ${requiredVehicleCount}x ${selectedCarName}\n` +
     `*Date:* ${formData.booking_date}\n` +
     `*Paid:* ₹${payableAmount} | *Balance Due:* ₹${balanceDueINR}`
   );
@@ -279,12 +282,12 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
             <div className="space-y-2">
               <h3 className="text-2xl font-bold text-white">Booking Confirmed & Paid!</h3>
               <p className="text-zinc-400 text-sm max-w-md mx-auto">
-                Park: <strong>{selectedParkName}</strong> | Slot: <strong>{formData.safari_slot}</strong>
+                Park: <strong>{selectedParkName}</strong> | Vehicles: <strong>{requiredVehicleCount}x {selectedCarName}</strong>
               </p>
               <div className="bg-zinc-900 p-4 rounded-2xl border border-white/10 max-w-md mx-auto text-xs space-y-1">
                 <p className="text-emerald-400 font-bold">Amount Paid Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
                 {balanceDueINR > 0 && (
-                  <p className="text-amber-400 font-extrabold">Balance Due Upon Arrival at Bandhavgarh HQ: ₹{balanceDueINR.toLocaleString("en-IN")}</p>
+                  <p className="text-amber-400 font-extrabold">Balance Due Upon Arrival: ₹{balanceDueINR.toLocaleString("en-IN")}</p>
                 )}
               </div>
             </div>
@@ -390,7 +393,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </div>
                   )}
 
-                  {/* Number of Guests */}
+                  {/* Travelers Count */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-orange-500" /> Number of Travelers (Persons)
@@ -406,21 +409,28 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </select>
                   </div>
 
-                  {/* Filtered Suitable Vehicles */}
+                  {/* Vehicle Choice + Multi-Vehicle Calculation Badge */}
                   <div>
-                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Transfer Vehicle ({formData.guests_count} Passengers)</label>
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Transfer Vehicle Model</label>
                     <select
                       value={formData.car_id}
                       onChange={(e) => setFormData({ ...formData, car_id: e.target.value })}
                       className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
                     >
-                      {suitableCars.map((car: any) => (
+                      {cars.map((car: any) => (
                         <option key={car.id} value={car.id} className="bg-zinc-900">{car.name} ({car.category})</option>
                       ))}
                     </select>
-                    {formData.guests_count > 6 && (
+
+                    {/* Multi-Vehicle Badge */}
+                    {requiredVehicleCount > 1 ? (
+                      <div className="mt-2 text-xs text-orange-400 bg-orange-500/10 border border-orange-500/30 p-3 rounded-xl flex items-center gap-2 font-bold">
+                        <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                        <span>{formData.guests_count} Travelers require {requiredVehicleCount}x {selectedCarName}s to comfortably accommodate your party.</span>
+                      </div>
+                    ) : (
                       <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1 font-medium">
-                        <AlertTriangle className="w-3.5 h-3.5" /> For group size &gt; 6, Force Traveller or 2 Gypsies will be arranged.
+                        <Info className="w-3.5 h-3.5" /> * Vehicle models shown in fleet are representative
                       </p>
                     )}
                   </div>
@@ -464,7 +474,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                       >
                         <p className="font-bold text-sm text-white">25% Advance Lock</p>
                         <p className="text-xs text-orange-400 font-extrabold mt-1">Pay Now: ₹{advanceAmount.toLocaleString("en-IN")}</p>
-                        <p className="text-[10px] text-zinc-500 mt-1">Due on Arrival: ₹{(totalPriceINR - advanceAmount).toLocaleString("en-IN")}</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">Due on Arrival: ₹{balanceDueINR.toLocaleString("en-IN")}</p>
                       </button>
 
                       <button
@@ -519,7 +529,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
                   />
 
-                  {/* Nationality & Aadhaar / Passport */}
                   <div className="pt-2 border-t border-white/10 space-y-3">
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nationality & Forest Permit ID Proof</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -559,6 +568,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                       <p className="text-zinc-300 text-xs font-semibold">
                         Upload {formData.nationality === "Indian" ? "Aadhaar Card" : "Passport"} Copy
                       </p>
+                      <p className="text-[10px] text-zinc-500">Required by Forest Department for Gate Entry Permits</p>
                       <input 
                         type="file" 
                         accept="image/*,.pdf" 
@@ -569,7 +579,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </div>
                   </div>
 
-                  {/* BUSINESS LOGIC FIX 4: Non-Refundable Permit Rule Checkbox */}
                   <div className="pt-2 border-t border-white/10 flex items-start gap-3 bg-zinc-900/60 p-3.5 rounded-xl border border-white/10">
                     <input
                       type="checkbox"
@@ -579,13 +588,14 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                       className="mt-0.5 w-4 h-4 rounded text-orange-500 focus:ring-orange-500 bg-black border-white/20"
                     />
                     <label htmlFor="permit_terms" className="text-[11px] text-zinc-300 leading-snug cursor-pointer">
-                      I agree to <strong>MP Forest Department Rules</strong>. I understand that government safari permits are strictly non-refundable and non-transferable once issued.
+                      I agree to <strong>MP Forest Department Rules</strong>. I understand that government safari permits are strictly non-refundable once issued.
                     </label>
                   </div>
 
                   <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-xl text-xs space-y-1">
                     <p className="font-bold text-white flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-orange-500" /> Payment Summary</p>
                     <p className="text-zinc-300">Park: {selectedParkName} | Slot: {formData.safari_slot}</p>
+                    <p className="text-zinc-300">Vehicles: {requiredVehicleCount}x {selectedCarName} ({formData.guests_count} Guests)</p>
                     <p className="text-orange-400 font-bold">Payable Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
                     {balanceDueINR > 0 && <p className="text-amber-400 font-semibold">Balance Due on Arrival: ₹{balanceDueINR.toLocaleString("en-IN")}</p>}
                   </div>
