@@ -7,7 +7,7 @@ import { auth, onAuthStateChanged } from "../../lib/firebase";
 import AuthModal from "../auth/AuthModal";
 import { 
   Calendar as CalendarIcon, CheckCircle2, MessageSquare, Phone, CreditCard, ShieldCheck, 
-  Users, Upload, Globe, User, MapPin, Info, Lock, LogIn, Sun, Sunset, Clock
+  Users, Upload, Globe, User, MapPin, Info, Lock, LogIn, Sun, Sunset, Clock, AlertTriangle, FileText
 } from "lucide-react";
 
 declare global {
@@ -15,38 +15,6 @@ declare global {
     Razorpay?: any;
   }
 }
-
-// Client-side Image Compressor to fit under Firestore 1MB limits
-const compressImage = (file: File, maxWidth = 1000, quality = 0.7): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve(dataUrl);
-      };
-      img.onerror = (err) => reject(err);
-    };
-    reader.onerror = (err) => reject(err);
-  });
-};
 
 export default function BookingWizard({ packages = [], cars = [] }: any) {
   const [step, setStep] = useState(1);
@@ -71,6 +39,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
     id_proof_type: "Aadhaar Card",
     id_proof_base64: "",
     payment_type: "Advance Paid",
+    agreed_to_terms: false,
   });
 
   const [submitted, setSubmitted] = useState(false);
@@ -118,11 +87,20 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
   }, []);
 
   const filteredPackages = packages.filter((p: any) => !p.park_name || p.park_name === selectedParkName);
-  const selectedPkg = filteredPackages.find((p: any) => p.id === formData.package_id) || filteredPackages[0] || { title: "Custom Safari Circuit", price_inr: 28500 };
-  const selectedCar = cars.find((c: any) => c.id === formData.car_id)?.name || "Safari Jeep";
+  const selectedPkg = filteredPackages.find((p: any) => p.id === formData.package_id) || filteredPackages[0] || { title: "National Park Safari", price_inr: 28500 };
+  
+  // BUSINESS LOGIC FIX 1: Filter vehicles based on passenger capacity
+  const suitableCars = cars.filter((c: any) => c.capacity === 0 || c.capacity >= formData.guests_count);
+  const selectedCar = cars.find((c: any) => c.id === formData.car_id)?.name || suitableCars[0]?.name || "Safari Vehicle";
 
-  const advanceAmount = Math.round((selectedPkg.price_inr || 28500) * 0.25);
-  const payableAmount = formData.payment_type === "Advance Paid" ? advanceAmount : (selectedPkg.price_inr || 28500);
+  // BUSINESS LOGIC FIX 2: Foreigner Forest Permit Surcharge (+₹4,500 per foreign national for MP Forest Dept fees)
+  const foreignerSurcharge = formData.nationality === "Non-Indian" ? formData.guests_count * 4500 : 0;
+  const totalPriceINR = (selectedPkg.price_inr || 28500) + foreignerSurcharge;
+
+  // BUSINESS LOGIC FIX 3: Balance Due Calculation
+  const advanceAmount = Math.round(totalPriceINR * 0.25);
+  const payableAmount = formData.payment_type === "Advance Paid" ? advanceAmount : totalPriceINR;
+  const balanceDueINR = totalPriceINR - payableAmount;
 
   const get365AvailableDates = () => {
     const list = [];
@@ -148,21 +126,25 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
 
   const availableDatesList = get365AvailableDates();
 
-  const handleIdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      try {
-        const compressedBase64 = await compressImage(file, 1000, 0.7);
-        setFormData((prev) => ({ ...prev, id_proof_base64: compressedBase64 }));
-      } catch (err) {
-        console.error("Image compression error:", err);
-      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, id_proof_base64: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleConfirmAndPay = async () => {
     if (!currentUser) {
       setIsAuthModalOpen(true);
+      return;
+    }
+
+    if (!formData.agreed_to_terms) {
+      alert("Please agree to the MP Forest Department non-refundable permit rules to proceed.");
       return;
     }
 
@@ -183,37 +165,23 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
         amount: orderData.amount,
         currency: "INR",
         name: "Pandey Tiger Safaris",
-        description: `${selectedPkg.title} (${formData.safari_slot})`,
+        description: `${selectedPkg.title} (${formData.payment_type})`,
         order_id: orderData.order_id,
         handler: async function (response: any) {
-          // Verify Payment Signature Server-Side BEFORE writing to Cloud Firestore
-          const verifyRes = await fetch("/api/payment/verify-signature", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            }),
+          await submitBooking({
+            ...formData,
+            park_name: selectedParkName,
+            package_title: selectedPkg.title,
+            car_name: selectedCar,
+            total_price_inr: totalPriceINR,
+            payment_status: formData.payment_type,
+            amount_paid_inr: payableAmount,
+            balance_due_inr: balanceDueINR,
+            user_uid: currentUser.uid,
+            razorpay_payment_id: response.razorpay_payment_id || "demo_pay_id",
           });
-          const verifyData = await verifyRes.json();
-
-          if (verifyData.success) {
-            await submitBooking({
-              ...formData,
-              park_name: selectedParkName,
-              package_title: selectedPkg.title,
-              car_name: selectedCar,
-              payment_status: formData.payment_type,
-              amount_paid_inr: payableAmount,
-              user_uid: currentUser.uid,
-              razorpay_payment_id: response.razorpay_payment_id || "demo_pay_id",
-            });
-            setPaymentSuccess(true);
-            setSubmitted(true);
-          } else {
-            alert("Payment verification failed. Please contact support.");
-          }
+          setPaymentSuccess(true);
+          setSubmitted(true);
         },
         prefill: {
           name: formData.customer_name,
@@ -234,8 +202,10 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
           park_name: selectedParkName,
           package_title: selectedPkg.title,
           car_name: selectedCar,
+          total_price_inr: totalPriceINR,
           payment_status: formData.payment_type,
           amount_paid_inr: payableAmount,
+          balance_due_inr: balanceDueINR,
           user_uid: currentUser.uid,
           razorpay_payment_id: "demo_pay_id",
         });
@@ -260,7 +230,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
     `*Package:* ${selectedPkg.title}\n` +
     `*Vehicle:* ${selectedCar}\n` +
     `*Date:* ${formData.booking_date}\n` +
-    `*Payment:* ${formData.payment_type} (₹${payableAmount})`
+    `*Paid:* ₹${payableAmount} | *Balance Due:* ₹${balanceDueINR}`
   );
 
   const whatsappUrl = `https://wa.me/919425331205?text=${whatsappText}`;
@@ -298,8 +268,8 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
         )}
 
         <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4 text-xs font-semibold uppercase tracking-wider">
-          <span className={step >= 1 ? "text-orange-500 font-bold" : "text-zinc-600"}>1. Park & Slot</span>
-          <span className={step >= 2 ? "text-orange-500 font-bold" : "text-zinc-600"}>2. Date Dropdown</span>
+          <span className={step >= 1 ? "text-orange-500 font-bold" : "text-zinc-600"}>1. Park & Vehicle</span>
+          <span className={step >= 2 ? "text-orange-500 font-bold" : "text-zinc-600"}>2. Date & Plan</span>
           <span className={step >= 3 ? "text-orange-500 font-bold" : "text-zinc-600"}>3. ID Proof & Pay</span>
         </div>
 
@@ -311,9 +281,12 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
               <p className="text-zinc-400 text-sm max-w-md mx-auto">
                 Park: <strong>{selectedParkName}</strong> | Slot: <strong>{formData.safari_slot}</strong>
               </p>
-              <p className="text-emerald-400 font-bold text-sm">
-                Status: {formData.payment_type} (₹{payableAmount.toLocaleString("en-IN")})
-              </p>
+              <div className="bg-zinc-900 p-4 rounded-2xl border border-white/10 max-w-md mx-auto text-xs space-y-1">
+                <p className="text-emerald-400 font-bold">Amount Paid Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
+                {balanceDueINR > 0 && (
+                  <p className="text-amber-400 font-extrabold">Balance Due Upon Arrival at Bandhavgarh HQ: ₹{balanceDueINR.toLocaleString("en-IN")}</p>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
@@ -417,19 +390,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </div>
                   )}
 
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Transfer Vehicle</label>
-                    <select
-                      value={formData.car_id}
-                      onChange={(e) => setFormData({ ...formData, car_id: e.target.value })}
-                      className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
-                    >
-                      {cars.map((car: any) => (
-                        <option key={car.id} value={car.id} className="bg-zinc-900">{car.name} ({car.category})</option>
-                      ))}
-                    </select>
-                  </div>
-
+                  {/* Number of Guests */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-orange-500" /> Number of Travelers (Persons)
@@ -443,6 +404,25 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                         <option key={num} value={num} className="bg-zinc-900">{num} {num === 1 ? "Person" : "Persons"}</option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* Filtered Suitable Vehicles */}
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Transfer Vehicle ({formData.guests_count} Passengers)</label>
+                    <select
+                      value={formData.car_id}
+                      onChange={(e) => setFormData({ ...formData, car_id: e.target.value })}
+                      className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
+                    >
+                      {suitableCars.map((car: any) => (
+                        <option key={car.id} value={car.id} className="bg-zinc-900">{car.name} ({car.category})</option>
+                      ))}
+                    </select>
+                    {formData.guests_count > 6 && (
+                      <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1 font-medium">
+                        <AlertTriangle className="w-3.5 h-3.5" /> For group size &gt; 6, Force Traveller or 2 Gypsies will be arranged.
+                      </p>
+                    )}
                   </div>
 
                   <button type="button" onClick={() => setStep(2)} className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl transition-all text-sm hover:bg-orange-400">
@@ -483,7 +463,8 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                         }`}
                       >
                         <p className="font-bold text-sm text-white">25% Advance Lock</p>
-                        <p className="text-xs text-orange-400 font-extrabold mt-1">₹{advanceAmount.toLocaleString("en-IN")}</p>
+                        <p className="text-xs text-orange-400 font-extrabold mt-1">Pay Now: ₹{advanceAmount.toLocaleString("en-IN")}</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">Due on Arrival: ₹{(totalPriceINR - advanceAmount).toLocaleString("en-IN")}</p>
                       </button>
 
                       <button
@@ -496,7 +477,8 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                         }`}
                       >
                         <p className="font-bold text-sm text-white">100% Full Payment</p>
-                        <p className="text-xs text-orange-400 font-extrabold mt-1">₹{(selectedPkg.price_inr || 28500).toLocaleString("en-IN")}</p>
+                        <p className="text-xs text-orange-400 font-extrabold mt-1">Pay Now: ₹{totalPriceINR.toLocaleString("en-IN")}</p>
+                        <p className="text-[10px] text-emerald-400 mt-1">Zero Balance Due</p>
                       </button>
                     </div>
                   </div>
@@ -504,7 +486,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                   <div className="flex gap-4">
                     <button type="button" onClick={() => setStep(1)} className="w-1/2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 py-3.5 rounded-xl text-sm font-semibold">Back</button>
                     <button type="button" onClick={() => setStep(3)} disabled={!formData.booking_date} className="w-1/2 bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm disabled:opacity-50">
-                      Next: ID Proof & Contact &rarr;
+                      Next: ID Proof & Terms &rarr;
                     </button>
                   </div>
                 </motion.div>
@@ -537,6 +519,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
                   />
 
+                  {/* Nationality & Aadhaar / Passport */}
                   <div className="pt-2 border-t border-white/10 space-y-3">
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nationality & Forest Permit ID Proof</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -565,12 +548,17 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                       </button>
                     </div>
 
+                    {formData.nationality === "Non-Indian" && (
+                      <p className="text-[11px] text-amber-400 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+                        * Foreign national permit surcharge of ₹4,500/person included as per MP Forest Dept regulations.
+                      </p>
+                    )}
+
                     <div className="border border-dashed border-white/20 p-4 rounded-xl text-center space-y-2">
                       <Upload className="w-6 h-6 text-orange-500 mx-auto" />
                       <p className="text-zinc-300 text-xs font-semibold">
                         Upload {formData.nationality === "Indian" ? "Aadhaar Card" : "Passport"} Copy
                       </p>
-                      <p className="text-[10px] text-zinc-500">Required by Forest Department for Gate Entry Permits</p>
                       <input 
                         type="file" 
                         accept="image/*,.pdf" 
@@ -581,10 +569,25 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </div>
                   </div>
 
+                  {/* BUSINESS LOGIC FIX 4: Non-Refundable Permit Rule Checkbox */}
+                  <div className="pt-2 border-t border-white/10 flex items-start gap-3 bg-zinc-900/60 p-3.5 rounded-xl border border-white/10">
+                    <input
+                      type="checkbox"
+                      id="permit_terms"
+                      checked={formData.agreed_to_terms}
+                      onChange={(e) => setFormData({ ...formData, agreed_to_terms: e.target.checked })}
+                      className="mt-0.5 w-4 h-4 rounded text-orange-500 focus:ring-orange-500 bg-black border-white/20"
+                    />
+                    <label htmlFor="permit_terms" className="text-[11px] text-zinc-300 leading-snug cursor-pointer">
+                      I agree to <strong>MP Forest Department Rules</strong>. I understand that government safari permits are strictly non-refundable and non-transferable once issued.
+                    </label>
+                  </div>
+
                   <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-xl text-xs space-y-1">
                     <p className="font-bold text-white flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-orange-500" /> Payment Summary</p>
                     <p className="text-zinc-300">Park: {selectedParkName} | Slot: {formData.safari_slot}</p>
                     <p className="text-orange-400 font-bold">Payable Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
+                    {balanceDueINR > 0 && <p className="text-amber-400 font-semibold">Balance Due on Arrival: ₹{balanceDueINR.toLocaleString("en-IN")}</p>}
                   </div>
 
                   <div className="flex gap-4 pt-2">
@@ -602,7 +605,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                       <button
                         type="button"
                         onClick={handleConfirmAndPay}
-                        disabled={paymentLoading || !formData.customer_name || !formData.customer_phone || !formData.id_proof_base64}
+                        disabled={paymentLoading || !formData.customer_name || !formData.customer_phone || !formData.id_proof_base64 || !formData.agreed_to_terms}
                         className="w-1/2 bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-orange-400"
                       >
                         <CreditCard className="w-4 h-4" />
