@@ -1,10 +1,8 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Compass, Sparkles, Shield, ArrowRight, Car, Users, Zap, CheckCircle2 } from "lucide-react";
+import { Compass, Sparkles, ArrowRight, Car, Users } from "lucide-react";
 
 export default function Home() {
   const containerVariants = {
@@ -48,7 +46,7 @@ export default function Home() {
             <span className="bg-gradient-to-r from-orange-400 via-orange-500 to-amber-600 bg-clip-text text-transparent">
               Bandhavgarh
             </span>
-          </h1>
+          </motion.h1>
 
           {/* Description */}
           <motion.p variants={itemVariants} className="text-zinc-400 text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed">

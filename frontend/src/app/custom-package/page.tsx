@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import CustomPackage from "../../components/sections/CustomPackage";
 
 export default function CustomPackagePage() {
