@@ -67,7 +67,6 @@ export default function GallerySlideshow() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
 
-  // Autoplay Timer Effect (3.5 Seconds Interval)
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
@@ -120,8 +119,8 @@ export default function GallerySlideshow() {
         </div>
       </div>
 
-      {/* Main Autoplay Slide */}
-      <div className="relative h-[380px] md:h-[480px] w-full rounded-2xl overflow-hidden group">
+      {/* Main Autoplay Slide - Anchored to Top for Face Framing */}
+      <div className="relative h-[420px] md:h-[520px] w-full rounded-2xl overflow-hidden group bg-black">
         <AnimatePresence mode="wait">
           <motion.img
             key={current.id}
@@ -134,11 +133,11 @@ export default function GallerySlideshow() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.5 }}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
           />
         </AnimatePresence>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent pointer-events-none" />
 
         <div className="absolute bottom-6 left-6 right-6 space-y-1.5 text-white">
           <span className="text-[10px] uppercase tracking-widest font-extrabold bg-orange-500 text-black px-2.5 py-1 rounded-full inline-block">
@@ -160,7 +159,7 @@ export default function GallerySlideshow() {
         )}
       </div>
 
-      {/* Thumbnails Navigation Bar */}
+      {/* Thumbnails Bar */}
       <div className="grid grid-cols-4 md:grid-cols-7 gap-2 pt-2">
         {slides.map((slide, idx) => (
           <button
@@ -176,7 +175,7 @@ export default function GallerySlideshow() {
                 e.target.src = slide.fallback_url;
               }}
               alt="Thumbnail"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
             />
           </button>
         ))}

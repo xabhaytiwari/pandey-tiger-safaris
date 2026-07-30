@@ -8,7 +8,6 @@ import { Phone, MapPin, Award, Users, Sparkles, Pause, Play } from "lucide-react
 export default function AboutPage() {
   const [founder, setFounder] = useState<any>(null);
 
-  // Owner Photos Autoplay Carousel Data
   const ownerPhotos = [
     {
       id: 1,
@@ -47,7 +46,6 @@ export default function AboutPage() {
     fetchFromAPI("/founder").then((data) => setFounder(data));
   }, []);
 
-  // Owner Photo Autoplay Effect (3 Seconds)
   useEffect(() => {
     if (!isAutoPlaying) return;
     const interval = setInterval(() => {
@@ -61,7 +59,6 @@ export default function AboutPage() {
   return (
     <main className="min-h-screen max-w-5xl mx-auto px-6 py-12 space-y-16">
       <div className="grid md:grid-cols-2 gap-12 items-center">
-        {/* Owner Information */}
         <div className="space-y-6">
           <span className="text-xs font-mono uppercase tracking-widest text-orange-500 font-bold flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-orange-500" /> Business Owner & Tour Operator
@@ -80,13 +77,13 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Autoplay Owner Photo Carousel */}
+        {/* Autoplay Owner Photo Carousel with Top Alignment */}
         <div 
-          className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-950 group"
+          className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black group"
           onMouseEnter={() => setIsAutoPlaying(false)}
           onMouseLeave={() => setIsAutoPlaying(true)}
         >
-          <div className="relative h-[480px] w-full">
+          <div className="relative h-[500px] w-full">
             <AnimatePresence mode="wait">
               <motion.img 
                 key={activePhoto.id}
@@ -99,11 +96,11 @@ export default function AboutPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.5 }}
-                className="w-full h-full object-cover" 
+                className="w-full h-full object-cover object-top" 
               />
             </AnimatePresence>
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent pointer-events-none" />
 
             <div className="absolute top-4 right-4 z-20">
               <button 
@@ -122,7 +119,6 @@ export default function AboutPage() {
               <p className="text-xs text-zinc-300 font-light">{activePhoto.caption}</p>
             </div>
 
-            {/* Progress Bar */}
             {isAutoPlaying && (
               <motion.div
                 key={`owner-progress-${activePhoto.id}`}
@@ -134,7 +130,6 @@ export default function AboutPage() {
             )}
           </div>
 
-          {/* Selector Dots */}
           <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-30 pb-2">
             {ownerPhotos.map((_, idx) => (
               <button
