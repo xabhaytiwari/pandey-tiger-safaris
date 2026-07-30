@@ -33,6 +33,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
+    { href: "/sightings", label: "Live Map" },
     { href: "/packages", label: "Packages" },
     { href: "/fleet", label: "Fleet" },
     { href: "/booking", label: "Book Safari" },
@@ -44,7 +45,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] w-full bg-black/70 backdrop-blur-2xl border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] gpu-layer">
+      <header className="fixed top-0 left-0 right-0 z-[100] w-full bg-black/70 backdrop-blur-2xl border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]">
         <div className="max-w-[1400px] mx-auto px-6 py-3.5 flex items-center justify-between">
           
           <Link href="/" onClick={() => { triggerHaptic(10); setMobileMenuOpen(false); }} className="font-extrabold text-lg tracking-tight text-white flex items-center gap-2 group">
@@ -54,7 +55,6 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* 120Hz Spring Slider */}
           <div className="hidden lg:flex items-center gap-1 bg-white/[0.03] border border-white/10 p-1.5 rounded-full backdrop-blur-md">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -63,7 +63,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => triggerHaptic(10)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all relative ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all relative ${
                     isActive
                       ? "text-black font-extrabold"
                       : "text-zinc-400 hover:text-white hover:bg-white/5"
@@ -74,7 +74,7 @@ export default function Navbar() {
                     <motion.div
                       layoutId="activeNavTab"
                       className="absolute inset-0 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 rounded-full -z-10 shadow-[0_0_20px_rgba(255,122,0,0.4)]"
-                      transition={{ type: "spring", stiffness: 500, damping: 32, mass: 0.5 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 32 }}
                     />
                   )}
                 </Link>
@@ -123,7 +123,7 @@ export default function Navbar() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
               className="lg:hidden border-t border-white/10 bg-black/95 backdrop-blur-3xl px-6 py-4 space-y-2.5 overflow-hidden"
             >
               {navLinks.map((link) => {
@@ -133,7 +133,7 @@ export default function Navbar() {
                     key={link.href}
                     href={link.href}
                     onClick={() => { triggerHaptic(10); setMobileMenuOpen(false); }}
-                    className={`px-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-between transition-all active:scale-98 ${
+                    className={`px-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-between transition-all ${
                       isActive
                         ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
                         : "text-zinc-300 hover:text-white hover:bg-white/10"
@@ -156,7 +156,7 @@ export default function Navbar() {
                       setIsAuthOpen(true);
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-2xl text-sm shadow-lg active:scale-98"
+                    className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-2xl text-sm shadow-lg active:scale-95"
                   >
                     Sign In / Register
                   </button>
@@ -167,7 +167,7 @@ export default function Navbar() {
                       signOut(auth);
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full bg-red-500/10 border border-red-500/30 text-red-400 font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-98"
+                    className="w-full bg-red-500/10 border border-red-500/30 text-red-400 font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95"
                   >
                     <LogOut className="w-4 h-4" /> Sign Out ({user.name})
                   </button>
