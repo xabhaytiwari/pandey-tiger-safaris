@@ -5,7 +5,7 @@ import { db, auth, onAuthStateChanged } from "../../lib/firebase";
 import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { getExifGPS, findNearestPark } from "../../lib/exif";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Sparkles, X, CheckCircle2, Flame, Upload, Camera, Navigation } from "lucide-react";
+import { MapPin, Sparkles, X, CheckCircle2, Flame, Upload, Camera, Navigation, Crosshair } from "lucide-react";
 import { triggerHaptic } from "../../lib/sound";
 import AuthModal from "../auth/AuthModal";
 
@@ -33,7 +33,9 @@ export default function SightingMap() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLatLng, setSelectedLatLng] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsDetected, setGpsDetected] = useState(false);
+  const [detectionSource, setDetectionSource] = useState<"live_gps" | "photo_exif" | "manual">("manual");
   const [sightingPhotoBase64, setSightingPhotoBase64] = useState<string>("");
+  const [isGpsLoading, setIsGpsLoading] = useState(false);
 
   const [sightingForm, setFormData] = useState({
     description: "Royal Bengal Tiger spotted crossing forest track",
@@ -104,6 +106,7 @@ export default function SightingMap() {
       triggerHaptic(12);
       setSelectedLatLng({ lat: e.latlng.lat, lng: e.latlng.lng });
       setGpsDetected(false);
+      setDetectionSource("manual");
       setIsModalOpen(true);
     });
 
@@ -149,40 +152,79 @@ export default function SightingMap() {
     });
   }, [sightings, selectedPark]);
 
-  // Handle Photo Upload with Automatic EXIF GPS Extraction
+  // LIVE GPS EXTRACTOR: Device Satellite Geolocation (navigator.geolocation)
+  const handleDetectLiveGps = () => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      alert("Satellite Geolocation is not supported by your browser.");
+      return;
+    }
+
+    triggerHaptic(15);
+    setIsGpsLoading(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        const nearestPark = findNearestPark(lat, lng);
+
+        setSelectedPark(nearestPark);
+        setSelectedLatLng({ lat, lng });
+        setGpsDetected(true);
+        setDetectionSource("live_gps");
+        setIsGpsLoading(false);
+        setIsModalOpen(true);
+
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.5 });
+        }
+      },
+      (error) => {
+        setIsGpsLoading(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          alert("Location permission was denied. Please allow location access or tap directly on the map.");
+        } else {
+          alert("Unable to acquire live GPS signal. Please tap directly on the map or upload a photo with EXIF location.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  // PHOTO EXIF GPS EXTRACTOR
   const handlePhotoAutoMark = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     triggerHaptic(15);
 
-    // 1. Convert photo to Base64 preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setSightingPhotoBase64(reader.result as string);
     };
     reader.readAsDataURL(file);
 
-    // 2. Extract EXIF GPS Metadata from Photo
     const gps = await getExifGPS(file);
 
     if (gps && gps.lat && gps.lng) {
-      // Auto-detect closest MP National Park
       const nearestPark = findNearestPark(gps.lat, gps.lng);
 
       setSelectedPark(nearestPark);
       setSelectedLatLng({ lat: gps.lat, lng: gps.lng });
       setGpsDetected(true);
+      setDetectionSource("photo_exif");
       setIsModalOpen(true);
 
       if (mapInstanceRef.current) {
         mapInstanceRef.current.flyTo([gps.lat, gps.lng], 14, { duration: 1.5 });
       }
     } else {
-      alert("No EXIF GPS location found in photo. Defaulting to center of " + selectedPark + ". You can tap on the map to fine-tune location.");
+      alert("No EXIF GPS location found in photo. Defaulting to center of " + selectedPark + ". Tap on the map to set location.");
       const coords = PARK_COORDINATES[selectedPark];
       setSelectedLatLng({ lat: coords.lat, lng: coords.lng });
       setGpsDetected(false);
+      setDetectionSource("manual");
       setIsModalOpen(true);
     }
   };
@@ -205,7 +247,7 @@ export default function SightingMap() {
         zone_name: sightingForm.zone_name,
         safari_slot: sightingForm.safari_slot,
         photo_url: sightingPhotoBase64 || "",
-        gps_auto_detected: gpsDetected,
+        detection_source: detectionSource,
         user_name: currentUser.displayName || currentUser.email?.split("@")[0] || "Safari Guest",
         user_uid: currentUser.uid,
         createdAt: serverTimestamp(),
@@ -224,22 +266,36 @@ export default function SightingMap() {
 
   return (
     <div className="space-y-6">
-      {/* EXIF Photo Location Auto-Marker Button Bar */}
-      <div className="bg-zinc-950 border border-orange-500/30 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+      {/* Location Extractor Top Action Bar */}
+      <div className="bg-zinc-950 border border-orange-500/30 p-4 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 flex-shrink-0">
-            <Camera className="w-5 h-5" />
+            <Navigation className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <h4 className="font-bold text-white text-sm">Upload Tiger Photo to Auto-Mark Location</h4>
-            <p className="text-zinc-400 text-xs">Upload a JPEG photo taken on your phone. App extracts EXIF GPS tags & auto-places the tiger on the map!</p>
+            <h4 className="font-bold text-white text-sm">Auto-Mark Tiger Sighting Location</h4>
+            <p className="text-zinc-400 text-xs">Use live device GPS, upload a photo with EXIF location, or tap anywhere on the map!</p>
           </div>
         </div>
 
-        <label className="bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-6 py-3 rounded-full text-xs transition-all shadow-lg shadow-orange-500/20 flex items-center gap-2 cursor-pointer whitespace-nowrap active:scale-95">
-          <Upload className="w-4 h-4" /> Upload Photo with GPS
-          <input type="file" accept="image/jpeg,image/jpg" onChange={handlePhotoAutoMark} className="hidden" />
-        </label>
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto justify-end">
+          {/* 1. Live Device Satellite GPS Button */}
+          <button
+            type="button"
+            onClick={handleDetectLiveGps}
+            disabled={isGpsLoading}
+            className="bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-5 py-2.5 rounded-full text-xs transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 whitespace-nowrap active:scale-95 disabled:opacity-50"
+          >
+            <Crosshair className="w-4 h-4" />
+            {isGpsLoading ? "Acquiring Satellite GPS..." : "Use My Live GPS"}
+          </button>
+
+          {/* 2. Photo EXIF GPS Button */}
+          <label className="bg-zinc-900 border border-white/15 hover:bg-zinc-800 text-white font-bold px-5 py-2.5 rounded-full text-xs transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap active:scale-95">
+            <Upload className="w-4 h-4 text-orange-500" /> Photo EXIF GPS
+            <input type="file" accept="image/jpeg,image/jpg" onChange={handlePhotoAutoMark} className="hidden" />
+          </label>
+        </div>
       </div>
 
       {/* Park Selector Tabs */}
@@ -268,10 +324,10 @@ export default function SightingMap() {
 
         <div className="absolute top-4 left-4 z-20 bg-black/80 backdrop-blur-md border border-white/10 p-3 rounded-2xl text-xs text-white max-w-xs space-y-1">
           <p className="font-extrabold text-orange-400 flex items-center gap-1">
-            <Flame className="w-4 h-4 text-orange-500" /> Click Map or Upload Photo
+            <Flame className="w-4 h-4 text-orange-500" /> Click Map, Live GPS, or Photo
           </p>
           <p className="text-[11px] text-zinc-400 leading-snug">
-            Tap anywhere in {selectedPark} or upload a GPS tiger photo to update the live heat map!
+            Tap anywhere in {selectedPark}, click &quot;Use My Live GPS&quot;, or upload a photo to update the live heat map!
           </p>
         </div>
       </div>
@@ -304,7 +360,7 @@ export default function SightingMap() {
               {gpsDetected && (
                 <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl text-xs text-emerald-400 font-semibold flex items-center gap-2">
                   <Navigation className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  Auto-detected GPS Location from Photo EXIF ({selectedLatLng?.lat.toFixed(4)}°, {selectedLatLng?.lng.toFixed(4)}°)
+                  Location extracted via {detectionSource === "live_gps" ? "Live Device Satellite GPS" : "Photo EXIF Metadata"} ({selectedLatLng?.lat.toFixed(4)}°, {selectedLatLng?.lng.toFixed(4)}°)
                 </div>
               )}
 
