@@ -16,17 +16,17 @@ declare global {
   }
 }
 
-export default function BookingWizard({ packages = [], cars = [] }: any) {
+export default function BookingWizard({ packages = [], cars = [], initialPark }: any) {
   const [step, setStep] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const [parks, setParks] = useState<any[]>([]);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
-  const [selectedParkName, setSelectedParkName] = useState<string>("Bandhavgarh National Park");
+  const [selectedParkName, setSelectedParkName] = useState<string>(initialPark || "Bandhavgarh National Park");
 
   const [formData, setFormData] = useState({
-    park_name: "Bandhavgarh National Park",
+    park_name: initialPark || "Bandhavgarh National Park",
     package_id: packages[0]?.id || "",
     car_id: cars[0]?.id || "",
     booking_date: new Date().toISOString().split("T")[0],
@@ -45,6 +45,13 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
   const [submitted, setSubmitted] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialPark) {
+      setSelectedParkName(initialPark);
+      setFormData((prev) => ({ ...prev, park_name: initialPark }));
+    }
+  }, [initialPark]);
 
   useEffect(() => {
     async function loadInitialData() {
@@ -93,8 +100,8 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
   const selectedCarName = selectedCarObj.name;
   const singleCarCap = selectedCarObj.capacity || 6;
 
-  // MULTI-VEHICLE CALCULATION: Calculate required vehicle count if guests > vehicle capacity
   const requiredVehicleCount = singleCarCap > 0 ? Math.ceil(formData.guests_count / singleCarCap) : 1;
+  const suitableCars = cars.filter((c: any) => c.capacity === 0 || c.capacity >= formData.guests_count);
 
   const foreignerSurcharge = formData.nationality === "Non-Indian" ? formData.guests_count * 4500 : 0;
   const totalPriceINR = (selectedPkg.price_inr || 28500) + foreignerSurcharge;
@@ -393,7 +400,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </div>
                   )}
 
-                  {/* Travelers Count */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-orange-500" /> Number of Travelers (Persons)
@@ -409,7 +415,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </select>
                   </div>
 
-                  {/* Vehicle Choice + Multi-Vehicle Calculation Badge */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Transfer Vehicle Model</label>
                     <select
@@ -417,12 +422,11 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                       onChange={(e) => setFormData({ ...formData, car_id: e.target.value })}
                       className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
                     >
-                      {cars.map((car: any) => (
+                      {(suitableCars.length > 0 ? suitableCars : cars).map((car: any) => (
                         <option key={car.id} value={car.id} className="bg-zinc-900">{car.name} ({car.category})</option>
                       ))}
                     </select>
 
-                    {/* Multi-Vehicle Badge */}
                     {requiredVehicleCount > 1 ? (
                       <div className="mt-2 text-xs text-orange-400 bg-orange-500/10 border border-orange-500/30 p-3 rounded-xl flex items-center gap-2 font-bold">
                         <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />
