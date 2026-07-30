@@ -17,40 +17,54 @@ const SEED_DATA = {
     bio: "Dinesh Pandey (+91 9425331205) is the proud business owner of Pandey Tiger Safaris in Bandhavgarh. Dinesh provides end-to-end tour and travel management—offering complete safari packages, luxury vehicle fleets (Innova Crysta, Force Traveller, Swift Dzire), and an army of Bandhavgarh's finest licensed forest guides and tiger trackers on demand.",
     image_url: "/dinesh-pandey.jpg"
   },
-  packages: [
-    {
-      id: "pkg_1",
-      title: "Royal Bengal Tiger Expedition",
-      duration: "3 Days / 2 Nights",
-      price_inr: 28500,
-      description: "4 Open Jeep Safaris in Tala and Magdhi zones with dedicated licensed guides and resort stays.",
-      highlights: "4 Safaris, Resort Stay, Railway Station Pickup, Expert Guides",
-      image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
+  // Default Fleet with High-Resolution Real Vehicle Photos from Unsplash
+  cars: [
+    { 
+      id: "car_1", 
+      name: "Toyota Innova Crysta", 
+      category: "Premium SUV Transport", 
+      capacity: 7, 
+      image_url: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=1200", 
+      description: "White 7-seater premium AC MPV/SUV for smooth transfers from Katni or Jabalpur." 
     },
-    {
-      id: "pkg_2",
-      title: "Bandhavgarh Fort & Wildlife Trail",
-      duration: "4 Days / 3 Nights",
-      price_inr: 42000,
-      description: "Trek the ancient fort combined with morning and evening jungle tiger tracking led by an army of expert guides.",
-      highlights: "6 Safaris, Ancient Fort Trek, Dedicated Fleet Support",
-      image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800"
+    { 
+      id: "car_2", 
+      name: "Force Traveller", 
+      category: "Group Luxury Minibus", 
+      capacity: 13, 
+      image_url: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=1200", 
+      description: "Spacious AC minibus ideal for family groups and corporate wildlife expeditions." 
+    },
+    { 
+      id: "car_3", 
+      name: "Maruti Suzuki Swift Dzire", 
+      category: "Comfort Sedan", 
+      capacity: 4, 
+      image_url: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=1200", 
+      description: "Fuel-efficient AC sedan for small families and airport/railway station pickups." 
+    },
+    { 
+      id: "car_4", 
+      name: "Open 4x4 Maruti Suzuki Gypsy", 
+      category: "Jungle Safari Jeep", 
+      capacity: 6, 
+      image_url: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=1200", 
+      description: "Forest-department authorized open 4x4 jeep for safari tracks in Tala, Magdhi & Khitauli." 
+    },
+    { 
+      id: "car_5", 
+      name: "Personal / Custom Request Vehicle", 
+      category: "Tailored Fleet", 
+      capacity: 0, 
+      image_url: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=1200", 
+      description: "Bespoke personal vehicle requests accommodated directly by Dinesh Pandey." 
     }
   ],
-  cars: [
-    { id: "car_1", name: "Innova Crysta", category: "Premium SUV Transport", capacity: 7, image_url: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=800", description: "Ideal for comfortable long-distance transfers from Jabalpur or Katni." },
-    { id: "car_2", name: "Force Traveller", category: "Group Luxury Van", capacity: 13, image_url: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=800", description: "Spacious luxury van for families and corporate groups." },
-    { id: "car_3", name: "Swift Dzire", category: "Comfort Sedan", capacity: 4, image_url: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800", description: "Economical and smooth pickup option for small families." },
-    { id: "car_4", name: "Open 4x4 Maruti Gypsy", category: "Jungle Safari Jeep", capacity: 6, image_url: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800", description: "Forest-approved open 4x4 jeep for internal safari tracks." },
-    { id: "car_5", name: "Personal / Custom Request", category: "Tailored Fleet", capacity: 0, image_url: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800", description: "Special personal vehicle requests entertained directly by Dinesh Pandey." }
-  ],
-  drivers: [
-    { id: "drv_1", name: "Ramesh Singh", experience_years: 12, rating: 4.9, photo_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400" },
-    { id: "drv_2", name: "Vikram Verma", experience_years: 8, rating: 4.8, photo_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400" }
-  ],
+  packages: [], // Managed dynamically from Admin
+  drivers: [],  // Managed dynamically from Admin
   reviews: [
     { id: "rev_1", author: "Ananya Sharma", location: "Delhi, India", rating: 5, comment: "Dinesh Pandey (+91 9425331205) organized our entire package and provided the best forest guide. Top service!" },
-    { id: "rev_2", author: "Suresh Kothari", location: "Mumbai, India", rating: 5, comment: "Booked a Force Traveller and complete tour with Dinesh Ji. Everything was seamless from station pickup to safari permits." }
+    { id: "rev_2", author: "Suresh Kothari", location: "Mumbai, India", rating: 5, comment: "Booked an Innova Crysta and complete tour with Dinesh Ji. Everything was seamless!" }
   ],
   contact: {
     hq_address: "Tala Gate Road, Near Bandhavgarh National Park, Umaria, MP - 484661",
@@ -102,7 +116,6 @@ export async function fetchFromAPI(endpoint: string) {
   }
 }
 
-// Create Prepaid Safari Booking in Firestore
 export async function submitBooking(payload: any) {
   try {
     const docRef = await addDoc(collection(db, "bookings"), {
@@ -118,7 +131,6 @@ export async function submitBooking(payload: any) {
   }
 }
 
-// Create Tour Package in Firestore (Admin)
 export async function addTourPackage(payload: any) {
   try {
     const docRef = await addDoc(collection(db, "packages"), {
@@ -128,6 +140,19 @@ export async function addTourPackage(payload: any) {
     return { status: "success", package_id: docRef.id };
   } catch (error: any) {
     console.error("Error adding package:", error);
+    return { status: "error", message: error.message };
+  }
+}
+
+export async function addDriver(payload: any) {
+  try {
+    const docRef = await addDoc(collection(db, "drivers"), {
+      ...payload,
+      createdAt: serverTimestamp(),
+    });
+    return { status: "success", driver_id: docRef.id };
+  } catch (error: any) {
+    console.error("Error adding driver:", error);
     return { status: "error", message: error.message };
   }
 }

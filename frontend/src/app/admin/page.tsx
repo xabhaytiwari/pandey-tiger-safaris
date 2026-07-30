@@ -8,7 +8,7 @@ import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firest
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, CheckCircle2, LogOut, Calendar as CalendarIcon, User, Mail, Phone, 
-  PlusCircle, Upload, Image as ImageIcon, Tag, X, FileText, Globe, Package
+  PlusCircle, Upload, Tag, X, FileText, Package, UserCheck, Star
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -22,11 +22,13 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [customReqs, setCustomReqs] = useState<any[]>([]);
   const [packagesList, setPackagesList] = useState<any[]>([]);
+  const [driversList, setDriversList] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Modals State
   const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
+  const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
 
   // Add Package Form State
   const [packageForm, setPackageForm] = useState({
@@ -36,6 +38,14 @@ export default function AdminDashboard() {
     description: "",
     highlights: "4 Safaris, Resort Stay, Railway Station Pickup",
     image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
+  });
+
+  // Add Driver Form State
+  const [driverForm, setDriverForm] = useState({
+    name: "",
+    experience_years: 10,
+    rating: 4.9,
+    photo_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400"
   });
 
   // Offline Booking Form State
@@ -63,7 +73,7 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // Real-Time Sync
+  // Real-Time Sync with Cloud Firestore
   useEffect(() => {
     if (authStep !== "authenticated") return;
 
@@ -79,10 +89,15 @@ export default function AdminDashboard() {
       setPackagesList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    const unsubDrivers = onSnapshot(collection(db, "drivers"), (snapshot) => {
+      setDriversList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     return () => {
       unsubBookings();
       unsubCustom();
       unsubPackages();
+      unsubDrivers();
     };
   }, [authStep]);
 
@@ -137,7 +152,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Create New Tour Package
+  // Create New Package
   const handleCreatePackage = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -159,7 +174,26 @@ export default function AdminDashboard() {
     }
   };
 
-  // Convert File Input to Base64
+  // Create New Driver
+  const handleCreateDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, "drivers"), {
+        ...driverForm,
+        createdAt: serverTimestamp(),
+      });
+      setIsDriverModalOpen(false);
+      setDriverForm({
+        name: "",
+        experience_years: 10,
+        rating: 4.9,
+        photo_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400"
+      });
+    } catch (err) {
+      console.error("Error creating driver:", err);
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -284,7 +318,14 @@ export default function AdminDashboard() {
                 onClick={() => setIsPackageModalOpen(true)}
                 className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-all"
               >
-                <Package className="w-4 h-4 text-orange-500" /> + Add Tour Package
+                <Package className="w-4 h-4 text-orange-500" /> + Add Package
+              </button>
+
+              <button
+                onClick={() => setIsDriverModalOpen(true)}
+                className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-all"
+              >
+                <UserCheck className="w-4 h-4 text-orange-500" /> + Add Driver
               </button>
 
               <button
@@ -349,14 +390,62 @@ export default function AdminDashboard() {
             )}
           </section>
 
-          {/* Bookings List with ID Proof Thumbnails */}
+          {/* Published Packages Management View */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Package className="w-5 h-5 text-orange-500" /> Tour Packages ({packagesList.length})
+            </h2>
+
+            {packagesList.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No custom packages published yet. Click &quot;+ Add Package&quot; to publish one.</p>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {packagesList.map((p) => (
+                  <div key={p.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex gap-4 text-xs">
+                    <img src={p.image_url} alt={p.title} className="w-24 h-24 object-cover rounded-xl" />
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-white text-sm">{p.title}</h4>
+                      <p className="text-orange-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
+                      <p className="text-zinc-400 line-clamp-2">{p.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Published Drivers Management View */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-orange-500" /> Active Drivers ({driversList.length})
+            </h2>
+
+            {driversList.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No drivers added yet. Click &quot;+ Add Driver&quot; to register a driver.</p>
+            ) : (
+              <div className="grid md:grid-cols-3 gap-4">
+                {driversList.map((d) => (
+                  <div key={d.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex items-center gap-4 text-xs">
+                    <img src={d.photo_url} alt={d.name} className="w-14 h-14 object-cover rounded-full" />
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{d.name}</h4>
+                      <p className="text-zinc-400">{d.experience_years} Years Experience</p>
+                      <p className="text-orange-400 flex items-center gap-1 font-bold"><Star className="w-3 h-3 fill-orange-400" /> {d.rating} Rating</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Bookings List */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Tag className="w-5 h-5 text-orange-500" /> Bookings & ID Proofs ({filteredBookings.length})
             </h2>
 
             {filteredBookings.length === 0 ? (
-              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No bookings found.</p>
+              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No bookings found for the selected date criteria.</p>
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
                 {filteredBookings.map((b) => (
@@ -381,7 +470,6 @@ export default function AdminDashboard() {
                       <span className="text-[10px] text-zinc-500 capitalize">{b.customer_email}</span>
                     </div>
 
-                    {/* Aadhaar or Passport ID Proof Viewer */}
                     {b.id_proof_base64 && (
                       <div className="pt-2 border-t border-white/5 space-y-1">
                         <p className="text-[10px] font-semibold text-orange-400 flex items-center gap-1">
@@ -400,20 +488,20 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Add Tour Package Modal */}
+      {/* Add Package Modal */}
       <AnimatePresence>
         {isPackageModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-lg rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
-                  <Package className="w-5 h-5" /> Publish New Tour Package
+                  <Package className="w-5 h-5" /> Publish Tour Package
                 </h3>
                 <button onClick={() => setIsPackageModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
               </div>
 
               <form onSubmit={handleCreatePackage} className="space-y-3 text-xs">
-                <input type="text" placeholder="Package Title (e.g. Bandhavgarh Fort Safari)" required value={packageForm.title} onChange={(e) => setPackageForm({...packageForm, title: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                <input type="text" placeholder="Package Title" required value={packageForm.title} onChange={(e) => setPackageForm({...packageForm, title: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
                 
                 <div className="grid grid-cols-2 gap-3">
                   <input type="text" placeholder="Duration (e.g. 3 Days / 2 Nights)" required value={packageForm.duration} onChange={(e) => setPackageForm({...packageForm, duration: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
@@ -425,7 +513,38 @@ export default function AdminDashboard() {
                 <input type="url" placeholder="Cover Image URL" required value={packageForm.image_url} onChange={(e) => setPackageForm({...packageForm, image_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
 
                 <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all">
-                  Publish Package to Website
+                  Publish Package to Cloud
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Driver Modal */}
+      <AnimatePresence>
+        {isDriverModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-lg rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
+                  <UserCheck className="w-5 h-5" /> Register Safari Driver
+                </h3>
+                <button onClick={() => setIsDriverModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreateDriver} className="space-y-3 text-xs">
+                <input type="text" placeholder="Driver Full Name" required value={driverForm.name} onChange={(e) => setDriverForm({...driverForm, name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="number" placeholder="Experience Years (e.g. 10)" required value={driverForm.experience_years} onChange={(e) => setDriverForm({...driverForm, experience_years: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                  <input type="number" step="0.1" max="5.0" placeholder="Rating (e.g. 4.9)" required value={driverForm.rating} onChange={(e) => setDriverForm({...driverForm, rating: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <input type="url" placeholder="Driver Photo URL" required value={driverForm.photo_url} onChange={(e) => setDriverForm({...driverForm, photo_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+
+                <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all">
+                  Register Driver
                 </button>
               </form>
             </motion.div>
@@ -480,13 +599,11 @@ export default function AdminDashboard() {
 
                 <input type="number" placeholder="Amount Paid in INR (₹)" required value={offlineForm.amount_paid_inr} onChange={(e) => setOfflineForm({...offlineForm, amount_paid_inr: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
 
-                {/* Upload Aadhaar or Passport */}
                 <div className="border border-dashed border-white/20 p-3 rounded-xl text-center space-y-1">
                   <p className="text-zinc-300 font-semibold">Attach {offlineForm.nationality === "Indian" ? "Aadhaar" : "Passport"} ID Copy</p>
                   <input type="file" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, "id_proof_base64")} className="block w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:bg-orange-500 file:text-black file:font-bold" />
                 </div>
 
-                {/* Upload Payment Proof */}
                 <div className="border border-dashed border-white/20 p-3 rounded-xl text-center space-y-1">
                   <p className="text-zinc-300 font-semibold">Attach Payment Receipt Screenshot</p>
                   <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, "payment_proof_base64")} className="block w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:bg-orange-500 file:text-black file:font-bold" />
