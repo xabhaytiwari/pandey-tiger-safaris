@@ -6,9 +6,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import TypewriterHero from "../components/ui/TypewriterHero";
 import TigerGallery from "../components/ui/TigerGallery";
 import GallerySlideshow from "../components/ui/GallerySlideshow";
+import ReviewMarquee from "../components/ui/ReviewMarquee";
+import { fetchFromAPI } from "../lib/api";
 import { Compass, Sparkles, ArrowRight, Car, Users, Zap } from "lucide-react";
 
 export default function Home() {
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchFromAPI("/reviews").then((data) => setReviews(data || []));
+  }, []);
+
   const heroBackgrounds = [
     "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg",
     "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/4b18dd77fedec8fa7534763a1d447f30e8e2cdf9.jpg",
@@ -61,7 +69,6 @@ export default function Home() {
             />
           </AnimatePresence>
 
-          {/* Perfect Gradient Masks Fading into Jet Black #000000 */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/75" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black" />
         </div>
@@ -73,25 +80,21 @@ export default function Home() {
           animate="visible"
           className="relative z-10 space-y-8 max-w-5xl mx-auto px-6"
         >
-          {/* Badge */}
           <motion.div variants={itemVariants} className="inline-flex">
             <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-extrabold uppercase tracking-widest backdrop-blur-xl shadow-lg shadow-orange-500/10">
               <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" /> Business Owner • Dinesh Pandey (+91 9425331205)
             </span>
           </motion.div>
 
-          {/* Main Title with Typewriter Sound & Park Names Animation */}
           <motion.h1 variants={itemVariants} className="text-5xl md:text-8xl font-black tracking-tight text-balance leading-none">
             Unleash the Wild in <br className="hidden md:block" />
             <TypewriterHero />
           </motion.h1>
 
-          {/* Description */}
           <motion.p variants={itemVariants} className="text-zinc-200 text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed drop-shadow-md">
             Spearheaded by business owner Dinesh Pandey (+91 9425331205). Complete tour packages, luxury transport (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed safari guides on demand.
           </motion.p>
 
-          {/* Call-to-Actions */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
               <Link href="/booking" className="w-full sm:w-auto px-9 py-4 bg-orange-500 text-black font-black text-sm rounded-full hover:bg-orange-400 transition-all flex items-center justify-center gap-2.5 shadow-xl shadow-orange-500/25">
@@ -106,7 +109,6 @@ export default function Home() {
             </motion.div>
           </motion.div>
 
-          {/* Stats Banner */}
           <motion.div variants={itemVariants} className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto border-t border-white/10 text-center">
             <div>
               <p className="text-3xl font-black text-orange-500">20+</p>
@@ -133,6 +135,9 @@ export default function Home() {
         <TigerGallery />
       </div>
 
+      {/* Infinite Guest Testimonials Marquee */}
+      <ReviewMarquee reviews={reviews} />
+
       {/* Real Owner & Fleet Slideshow */}
       <div className="max-w-6xl mx-auto py-12 px-4">
         <GallerySlideshow />
@@ -150,7 +155,6 @@ export default function Home() {
         </motion.h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Tour Packages */}
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.01 }} transition={{ duration: 0.3 }} className="md:col-span-2">
             <Link href="/packages" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
               <div className="space-y-3 z-10">
@@ -167,7 +171,6 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          {/* Card 2: Vehicles */}
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.02 }} transition={{ duration: 0.3 }}>
             <Link href="/fleet" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
               <div className="space-y-4 z-10">
@@ -183,7 +186,6 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          {/* Card 3: About Owner */}
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.02 }} transition={{ duration: 0.3 }}>
             <Link href="/about" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
               <div className="space-y-4 z-10">
@@ -199,7 +201,6 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          {/* Card 4: Custom Requests */}
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.01 }} transition={{ duration: 0.3 }} className="md:col-span-2">
             <Link href="/custom-package" className="group block bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-orange-500/30 hover:border-orange-500/70 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
               <div className="space-y-3 z-10">

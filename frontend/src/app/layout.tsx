@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import WhatsAppConcierge from "../components/ui/WhatsAppConcierge";
+import CursorGlow from "../components/ui/CursorGlow";
+import ScrollProgress from "../components/ui/ScrollProgress";
 
 export const metadata: Metadata = {
   title: "Pandey Tiger Safaris | Bandhavgarh & MP Reserves",
@@ -13,6 +15,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark scroll-smooth">
       <body className="bg-black text-zinc-100 antialiased selection:bg-orange-500 selection:text-black overflow-x-hidden">
+        <ScrollProgress />
+        <CursorGlow />
         <Navbar />
         <div className="pt-16">{children}</div>
         <WhatsAppConcierge />
