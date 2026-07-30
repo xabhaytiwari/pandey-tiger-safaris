@@ -4,12 +4,12 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
-import { collection, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, setDoc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, CheckCircle2, LogOut, Calendar as CalendarIcon, User, Mail, Phone, 
   PlusCircle, Upload, Tag, X, FileText, Package, UserCheck, Star, MapPin, 
-  ChevronLeft, ChevronRight, Ban, Trash2
+  ChevronLeft, ChevronRight, Ban, Trash2, Archive, RotateCcw, FolderArchive
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -31,12 +31,13 @@ export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [calendarMonthOffset, setCalendarMonthOffset] = useState(0);
 
-  // Modals State
+  // Modals & Section Toggles
   const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
   const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
   const [isParkModalOpen, setIsParkModalOpen] = useState(false);
   const [isBlockDateModalOpen, setIsBlockDateModalOpen] = useState(false);
+  const [showArchivedPackages, setShowArchivedPackages] = useState(false);
 
   const [blockForm, setBlockForm] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -49,7 +50,6 @@ export default function AdminDashboard() {
     image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
   });
 
-  // Package Form State
   const [packageForm, setPackageForm] = useState({
     park_name: "Bandhavgarh National Park",
     title: "",
@@ -94,7 +94,6 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // Sync park_name default when parksList loads
   useEffect(() => {
     if (parksList.length > 0 && !packageForm.park_name) {
       setPackageForm(prev => ({ ...prev, park_name: parksList[0].name }));
@@ -122,8 +121,7 @@ export default function AdminDashboard() {
     });
 
     const unsubParks = onSnapshot(collection(db, "parks"), (snapshot) => {
-      const pDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setParksList(pDocs);
+      setParksList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
     const unsubBlocked = onSnapshot(collection(db, "blocked_dates"), (snapshot) => {
@@ -187,8 +185,37 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       setError("Verification failed");
-    } finally {
+    } fontally {
       setLoading(false);
+    }
+  };
+
+  // Archive / Soft Delete Package
+  const handleArchivePackage = async (id: string) => {
+    try {
+      await setDoc(doc(db, "packages", id), { is_archived: true }, { merge: true });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Unarchive / Restore Package
+  const handleUnarchivePackage = async (id: string) => {
+    try {
+      await setDoc(doc(db, "packages", id), { is_archived: false }, { merge: true });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Delete Package Permanently
+  const handleDeletePackagePermanently = async (id: string) => {
+    if (confirm("Are you sure you want to permanently delete this package?")) {
+      try {
+        await deleteDoc(doc(db, "packages", id));
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
@@ -229,20 +256,11 @@ export default function AdminDashboard() {
     try {
       await addDoc(collection(db, "packages"), {
         ...packageForm,
+        is_archived: false,
         park_name: packageForm.park_name || (parksList[0]?.name || "Bandhavgarh National Park"),
         createdAt: serverTimestamp(),
       });
       setIsPackageModalOpen(false);
-      setPackageForm({
-        park_name: parksList[0]?.name || "Bandhavgarh National Park",
-        title: "",
-        duration: "3 Days / 2 Nights",
-        hotel_stars: "5-Star Ultra-Luxury Resort",
-        price_inr: 28500,
-        description: "",
-        highlights: "4 Safaris, Luxury Resort Stay, Station Pickup",
-        image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
-      });
     } catch (err: any) {
       alert("Error creating package: " + err.message);
     }
@@ -268,7 +286,6 @@ export default function AdminDashboard() {
         createdAt: serverTimestamp(),
       });
       setIsDriverModalOpen(false);
-      setDriverForm({ name: "", experience_years: 10, rating: 4.9, photo_base64: "" });
     } catch (err: any) {
       alert("Error creating driver: " + err.message);
     }
@@ -316,6 +333,9 @@ export default function AdminDashboard() {
   const filteredBookings = selectedDate 
     ? bookings.filter(b => b.booking_date === selectedDate)
     : bookings;
+
+  const activePackages = packagesList.filter(p => !p.is_archived);
+  const archivedPackages = packagesList.filter(p => p.is_archived);
 
   return (
     <main className="min-h-screen max-w-6xl mx-auto px-6 py-12">
@@ -477,69 +497,92 @@ export default function AdminDashboard() {
             )}
           </section>
 
-          {/* National Parks List */}
+          {/* Published Tour Packages (Active vs Archived) */}
           <section className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-orange-500" /> Active National Parks ({parksList.length})
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {parksList.map((p) => (
-                <div key={p.id} className="bg-zinc-950 border border-white/10 p-3 rounded-2xl text-center space-y-1 text-xs">
-                  <p className="font-bold text-white">{p.name}</p>
-                  <p className="text-[10px] text-zinc-500">{p.state}</p>
-                </div>
-              ))}
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Package className="w-5 h-5 text-orange-500" /> Tour Packages ({activePackages.length} Active)
+              </h2>
+
+              {archivedPackages.length > 0 && (
+                <button 
+                  onClick={() => setShowArchivedPackages(!showArchivedPackages)}
+                  className="text-xs bg-zinc-900 border border-white/10 hover:border-amber-500/50 px-3 py-1.5 rounded-full text-amber-400 font-semibold flex items-center gap-1.5"
+                >
+                  <FolderArchive className="w-3.5 h-3.5" />
+                  {showArchivedPackages ? "Hide Archived Packages" : `View Archived Packages (${archivedPackages.length})`}
+                </button>
+              )}
             </div>
-          </section>
 
-          {/* Published Drivers */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-orange-500" /> Active Drivers ({driversList.length})
-            </h2>
-
-            {driversList.length === 0 ? (
-              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No drivers registered yet. Click &quot;+ Add Driver&quot; to upload driver photo & details.</p>
+            {/* Active Packages Grid */}
+            {activePackages.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No active packages published yet. Click &quot;+ Add Package&quot; to publish one.</p>
             ) : (
-              <div className="grid md:grid-cols-3 gap-4">
-                {driversList.map((d) => (
-                  <div key={d.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex items-center gap-4 text-xs">
-                    <img src={d.photo_url || d.photo_base64} alt={d.name} className="w-16 h-16 object-cover rounded-full border border-orange-500/30" />
-                    <div>
-                      <h4 className="font-bold text-white text-sm">{d.name}</h4>
-                      <p className="text-zinc-400">{d.experience_years} Years Experience</p>
-                      <p className="text-orange-400 flex items-center gap-1 font-bold"><Star className="w-3 h-3 fill-orange-400" /> {d.rating} Rating</p>
+              <div className="grid md:grid-cols-2 gap-4">
+                {activePackages.map((p) => (
+                  <div key={p.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex gap-4 text-xs justify-between items-start">
+                    <div className="flex gap-4">
+                      <img src={p.image_url} alt={p.title} className="w-24 h-24 object-cover rounded-xl" />
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-orange-400 font-bold uppercase">{p.park_name || "Bandhavgarh"}</span>
+                          <span className="text-[10px] text-amber-400 font-bold border border-amber-500/30 px-2 py-0.5 rounded-full">{p.hotel_stars || "5-Star Resort"}</span>
+                        </div>
+                        <h4 className="font-bold text-white text-sm">{p.title}</h4>
+                        <p className="text-orange-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
+                      </div>
                     </div>
+
+                    <button 
+                      onClick={() => handleArchivePackage(p.id)}
+                      className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all"
+                      title="Move to Archived Packages"
+                    >
+                      <Archive className="w-3.5 h-3.5" /> Archive
+                    </button>
                   </div>
                 ))}
               </div>
             )}
-          </section>
 
-          {/* Published Tour Packages */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Package className="w-5 h-5 text-orange-500" /> Tour Packages ({packagesList.length})
-            </h2>
+            {/* Archived Packages Section */}
+            {showArchivedPackages && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-4 space-y-3 border-t border-white/10">
+                <h3 className="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+                  <FolderArchive className="w-4 h-4" /> Archived Packages ({archivedPackages.length})
+                </h3>
 
-            {packagesList.length === 0 ? (
-              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No custom packages published yet. Click &quot;+ Add Package&quot; to publish one.</p>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-4">
-                {packagesList.map((p) => (
-                  <div key={p.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex gap-4 text-xs">
-                    <img src={p.image_url} alt={p.title} className="w-24 h-24 object-cover rounded-xl" />
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-orange-400 font-bold uppercase">{p.park_name || "Bandhavgarh"}</span>
-                        <span className="text-[10px] text-amber-400 font-bold border border-amber-500/30 px-2 py-0.5 rounded-full">{p.hotel_stars || "5-Star Resort"}</span>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {archivedPackages.map((p) => (
+                    <div key={p.id} className="bg-zinc-950/80 border border-amber-500/20 rounded-2xl p-4 flex gap-4 text-xs justify-between items-start opacity-85">
+                      <div className="flex gap-4">
+                        <img src={p.image_url} alt={p.title} className="w-20 h-20 object-cover rounded-xl grayscale" />
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-zinc-500 font-bold uppercase">{p.park_name || "Bandhavgarh"} (Archived)</span>
+                          <h4 className="font-bold text-zinc-300 text-sm">{p.title}</h4>
+                          <p className="text-zinc-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
+                        </div>
                       </div>
-                      <h4 className="font-bold text-white text-sm">{p.title}</h4>
-                      <p className="text-orange-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
+
+                      <div className="flex flex-col gap-2 items-end">
+                        <button 
+                          onClick={() => handleUnarchivePackage(p.id)}
+                          className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1"
+                        >
+                          <RotateCcw className="w-3 h-3" /> Restore
+                        </button>
+                        <button 
+                          onClick={() => handleDeletePackagePermanently(p.id)}
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" /> Delete
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </motion.div>
             )}
           </section>
 
@@ -593,7 +636,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Add Tour Package Modal with Park Dropdown */}
+      {/* Add Tour Package Modal */}
       <AnimatePresence>
         {isPackageModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
@@ -606,7 +649,6 @@ export default function AdminDashboard() {
               </div>
 
               <form onSubmit={handleCreatePackage} className="space-y-3 text-xs">
-                {/* Park Dropdown Mapping */}
                 <div>
                   <label className="block text-zinc-400 mb-1 font-semibold">Select National Park</label>
                   <select 
@@ -624,7 +666,7 @@ export default function AdminDashboard() {
                   </select>
                 </div>
 
-                <input type="text" placeholder="Package Title (e.g. Royal Bengal Expedition)" required value={packageForm.title} onChange={(e) => setPackageForm({...packageForm, title: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                <input type="text" placeholder="Package Title" required value={packageForm.title} onChange={(e) => setPackageForm({...packageForm, title: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -643,7 +685,7 @@ export default function AdminDashboard() {
 
                 <input type="number" placeholder="Price in INR (₹)" required value={packageForm.price_inr} onChange={(e) => setPackageForm({...packageForm, price_inr: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
                 <textarea placeholder="Package Description" rows={3} required value={packageForm.description} onChange={(e) => setPackageForm({...packageForm, description: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white"></textarea>
-                <input type="text" placeholder="Highlights (e.g. 4 Safaris, Resort Stay)" required value={packageForm.highlights} onChange={(e) => setPackageForm({...packageForm, highlights: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                <input type="text" placeholder="Highlights" required value={packageForm.highlights} onChange={(e) => setPackageForm({...packageForm, highlights: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
                 <input type="url" placeholder="Cover Image URL" required value={packageForm.image_url} onChange={(e) => setPackageForm({...packageForm, image_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
 
                 <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all">

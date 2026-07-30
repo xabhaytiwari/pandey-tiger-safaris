@@ -16,7 +16,9 @@ export default function PackagesPage() {
         fetchFromAPI("/packages"),
         fetchFromAPI("/parks"),
       ]);
-      setPackages(p || []);
+      // Filter out any archived packages for the public view
+      const activePackages = (p || []).filter((item: any) => !item.is_archived);
+      setPackages(activePackages);
       setParks(pk || []);
     }
     loadData();
@@ -63,7 +65,7 @@ export default function PackagesPage() {
 
       {filteredPackages.length === 0 ? (
         <div className="bg-zinc-950 border border-white/10 rounded-3xl p-12 text-center space-y-4 max-w-xl mx-auto">
-          <p className="text-zinc-400 text-sm">No standard packages published for this park yet.</p>
+          <p className="text-zinc-400 text-sm">No active packages available for this park right now.</p>
           <Link href="/custom-package" className="inline-flex items-center gap-2 bg-orange-500 text-black font-extrabold px-6 py-3 rounded-full text-xs">
             Request Custom Safari Itinerary &rarr;
           </Link>

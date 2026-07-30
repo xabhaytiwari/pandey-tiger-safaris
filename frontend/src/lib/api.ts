@@ -18,13 +18,12 @@ const SEED_DATA = {
     bio: "Dinesh Pandey (+91 9425331205) is the proud business owner of Pandey Tiger Safaris across Madhya Pradesh's tiger reserves. Dinesh provides end-to-end tour and travel management—offering complete safari packages, luxury vehicle fleets (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed forest guides and tiger trackers on demand.",
     image_url: "/dinesh-pandey.jpg"
   },
-  // Pre-seeded 5 Madhya Pradesh National Parks
   parks: [
-    { id: "park_1", name: "Bandhavgarh National Park", state: "Madhya Pradesh", image_url: "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg" },
-    { id: "park_2", name: "Kanha National Park", state: "Madhya Pradesh", image_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrZoWc_WzK25PAeBO-8XQb3gf8AgEfVEnridQ2osZ7Eci7pYCYmDrE3yes&s=10" },
-    { id: "park_3", name: "Pench National Park", state: "Madhya Pradesh", image_url: "https://indiantigersafaris.com/wp-content/uploads/2025/10/Pench-Tiger-Safari-Tour-Package.webp" },
-    { id: "park_4", name: "Panna National Park", state: "Madhya Pradesh", image_url: "https://images.pexels.com/photos/21896819/pexels-photo-21896819.jpeg" },
-    { id: "park_5", name: "Satpura National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1500463959177-e0869687df26?auto=format&fit=crop&q=80&w=800" }
+    { id: "park_1", name: "Bandhavgarh National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800" },
+    { id: "park_2", name: "Kanha National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800" },
+    { id: "park_3", name: "Pench National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800" },
+    { id: "park_4", name: "Panna National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800" },
+    { id: "park_5", name: "Satpura National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" }
   ],
   cars: [
     { 
@@ -98,13 +97,6 @@ async function getCollectionData(collectionName: string, fallbackData: any) {
     if (!snapshot.empty) {
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
-
-    // Auto-seed Firestore if collection is empty
-    if (Array.isArray(fallbackData) && fallbackData.length > 0) {
-      for (const item of fallbackData) {
-        await setDoc(doc(db, collectionName, item.id || String(Math.random())), item);
-      }
-    }
     return fallbackData;
   } catch (error) {
     return fallbackData;
@@ -118,7 +110,9 @@ export async function fetchFromAPI(endpoint: string) {
     case "/parks":
       return getCollectionData("parks", SEED_DATA.parks);
     case "/packages":
-      return getCollectionData("packages", SEED_DATA.packages);
+      const allPkgs: any[] = await getCollectionData("packages", SEED_DATA.packages);
+      // Filter out archived packages for public website API calls
+      return Array.isArray(allPkgs) ? allPkgs.filter((p: any) => !p.is_archived) : [];
     case "/cars":
       return getCollectionData("cars", SEED_DATA.cars);
     case "/drivers":
@@ -149,6 +143,33 @@ export async function submitBooking(payload: any) {
   }
 }
 
+export async function archiveTourPackage(id: string) {
+  try {
+    await setDoc(doc(db, "packages", id), { is_archived: true }, { merge: true });
+    return { status: "success" };
+  } catch (error: any) {
+    return { status: "error", message: error.message };
+  }
+}
+
+export async function unarchiveTourPackage(id: string) {
+  try {
+    await setDoc(doc(db, "packages", id), { is_archived: false }, { merge: true });
+    return { status: "success" };
+  } catch (error: any) {
+    return { status: "error", message: error.message };
+  }
+}
+
+export async function deleteTourPackagePermanently(id: string) {
+  try {
+    await deleteDoc(doc(db, "packages", id));
+    return { status: "success" };
+  } catch (error: any) {
+    return { status: "error", message: error.message };
+  }
+}
+
 export async function blockBookingDate(payload: { date: string; reason: string }) {
   try {
     const docRef = await addDoc(collection(db, "blocked_dates"), {
@@ -174,6 +195,7 @@ export async function addTourPackage(payload: any) {
   try {
     const docRef = await addDoc(collection(db, "packages"), {
       ...payload,
+      is_archived: false,
       createdAt: serverTimestamp(),
     });
     return { status: "success", package_id: docRef.id };
