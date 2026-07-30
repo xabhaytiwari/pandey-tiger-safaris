@@ -77,7 +77,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Autoplay Owner Photo Carousel with Top Alignment */}
+        {/* Autoplay Owner Photo Carousel with object-[center_20%] Framing */}
         <div 
           className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black group"
           onMouseEnter={() => setIsAutoPlaying(false)}
@@ -96,7 +96,7 @@ export default function AboutPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.5 }}
-                className="w-full h-full object-cover object-top" 
+                className="w-full h-full object-cover object-[center_20%]" 
               />
             </AnimatePresence>
 

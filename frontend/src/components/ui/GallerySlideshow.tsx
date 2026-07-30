@@ -10,6 +10,7 @@ export default function GallerySlideshow() {
       id: 1,
       title: "Dinesh Pandey at TTF Travel & Tourism Fair",
       category: "Industry Events",
+      isOwner: true,
       image_url: "/gallery/owner-1.jpg",
       fallback_url: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=1200",
       caption: "Business owner Dinesh Pandey representing Pandey Tiger Safaris at TTF Kolkata Entry."
@@ -18,6 +19,7 @@ export default function GallerySlideshow() {
       id: 2,
       title: "Full Vehicle Fleet Lined Up with Drivers",
       category: "Real Fleet Showcase",
+      isOwner: false,
       image_url: "/gallery/fleet-1.jpg",
       fallback_url: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=1200",
       caption: "Our Toyota Innovas, Force Travellers, and AC Sedans lined up with uniformed drivers."
@@ -26,6 +28,7 @@ export default function GallerySlideshow() {
       id: 3,
       title: "Dinesh Pandey at Madhya Pradesh Tourism Stall",
       category: "Tourism Expos",
+      isOwner: true,
       image_url: "/gallery/owner-2.jpg",
       fallback_url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=1200",
       caption: "Promoting Bandhavgarh National Park tiger safari circuits at MP Tourism expo."
@@ -34,6 +37,7 @@ export default function GallerySlideshow() {
       id: 4,
       title: "Fleet Preparation & Maintenance",
       category: "Real Fleet Showcase",
+      isOwner: false,
       image_url: "/gallery/fleet-2.jpg",
       fallback_url: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=1200",
       caption: "Complete transport lineup prepared for railway station and airport guest transfers."
@@ -42,6 +46,7 @@ export default function GallerySlideshow() {
       id: 5,
       title: "SATTE International Travel Exhibition",
       category: "National Travel Show",
+      isOwner: true,
       image_url: "/gallery/owner-3.jpg",
       fallback_url: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=1200",
       caption: "Dinesh Pandey at SATTE Welcome Gate in Hall 9."
@@ -50,6 +55,7 @@ export default function GallerySlideshow() {
       id: 6,
       title: "Pandey Tiger Safaris Fleet Lined Up at Station Grounds",
       category: "Real Fleet Showcase",
+      isOwner: false,
       image_url: "/gallery/fleet-3.jpg",
       fallback_url: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=1200",
       caption: "Our team of experienced drivers and immaculate vehicles ready for departure."
@@ -58,6 +64,7 @@ export default function GallerySlideshow() {
       id: 7,
       title: "Outdoors in Madhya Pradesh Nature Circuit",
       category: "Safari Grounds",
+      isOwner: true,
       image_url: "/gallery/owner-4.jpg",
       fallback_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1200",
       caption: "Dinesh Pandey on location during jungle road inspections."
@@ -119,7 +126,7 @@ export default function GallerySlideshow() {
         </div>
       </div>
 
-      {/* Main Autoplay Slide - Anchored to Top for Face Framing */}
+      {/* Main Autoplay Slide - Owner photos use object-[center_20%], Fleet photos use object-center */}
       <div className="relative h-[420px] md:h-[520px] w-full rounded-2xl overflow-hidden group bg-black">
         <AnimatePresence mode="wait">
           <motion.img
@@ -133,7 +140,9 @@ export default function GallerySlideshow() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.5 }}
-            className="w-full h-full object-cover object-top"
+            className={`w-full h-full object-cover ${
+              current.isOwner ? "object-[center_20%]" : "object-center"
+            }`}
           />
         </AnimatePresence>
 
@@ -147,7 +156,6 @@ export default function GallerySlideshow() {
           <p className="text-xs text-zinc-300 font-light max-w-2xl">{current.caption}</p>
         </div>
 
-        {/* Autoplay Progress Bar */}
         {isPlaying && (
           <motion.div
             key={`progress-${currentIndex}`}
@@ -175,7 +183,9 @@ export default function GallerySlideshow() {
                 e.target.src = slide.fallback_url;
               }}
               alt="Thumbnail"
-              className="w-full h-full object-cover object-top"
+              className={`w-full h-full object-cover ${
+                slide.isOwner ? "object-[center_20%]" : "object-center"
+              }`}
             />
           </button>
         ))}
