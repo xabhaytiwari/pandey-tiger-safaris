@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import TypewriterHero from "../components/ui/TypewriterHero";
 import TigerGallery from "../components/ui/TigerGallery";
 import GallerySlideshow from "../components/ui/GallerySlideshow";
-import { Compass, Sparkles, ArrowRight, Car, Users } from "lucide-react";
+import { Compass, Sparkles, ArrowRight, Car, Users, Zap } from "lucide-react";
 
 export default function Home() {
   const heroBackgrounds = [
@@ -54,7 +54,7 @@ export default function Home() {
               src={heroBackgrounds[bgIndex]}
               alt="Tiger Background"
               initial={{ opacity: 0, scale: 1.04 }}
-              animate={{ opacity: 0.48, scale: 1 }}
+              animate={{ opacity: 0.52, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 1.2, ease: "easeInOut" }}
               className="w-full h-full object-cover filter blur-[1px]"
@@ -144,15 +144,15 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-xs font-mono uppercase tracking-widest text-orange-500 mb-8 text-center font-bold"
+          className="text-xs font-mono uppercase tracking-widest text-orange-500 mb-8 text-center font-bold flex items-center justify-center gap-1.5"
         >
-          Engineered for Wildlife Pursuits
+          <Zap className="w-4 h-4 text-orange-500" /> Engineered for Wildlife Pursuits
         </motion.h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1: Tour Packages */}
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -5 }} className="md:col-span-2">
-            <Link href="/packages" className="group block bg-zinc-950 border border-white/10 rounded-3xl p-8 hover:border-orange-500/50 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.01 }} transition={{ duration: 0.3 }} className="md:col-span-2">
+            <Link href="/packages" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
               <div className="space-y-3 z-10">
                 <span className="text-xs font-extrabold text-orange-500 uppercase tracking-widest bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">Featured Itineraries</span>
                 <h3 className="text-3xl font-black text-white group-hover:text-orange-500 transition-colors">Bandhavgarh & MP Tour Packages</h3>
@@ -161,15 +161,15 @@ export default function Home() {
               <div className="z-10 flex items-center gap-2 text-xs font-extrabold text-orange-500 pt-6">
                 Explore All Packages <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
               </div>
-              <div className="absolute right-0 bottom-0 opacity-25 group-hover:opacity-40 transition-opacity">
+              <div className="absolute right-0 bottom-0 opacity-25 group-hover:opacity-45 transition-opacity">
                 <img src="https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg" alt="Tiger" className="w-80 h-80 object-cover rounded-tl-3xl" />
               </div>
             </Link>
           </motion.div>
 
           {/* Card 2: Vehicles */}
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -5 }}>
-            <Link href="/fleet" className="group block bg-zinc-950 border border-white/10 rounded-3xl p-8 hover:border-orange-500/50 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.02 }} transition={{ duration: 0.3 }}>
+            <Link href="/fleet" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
               <div className="space-y-4 z-10">
                 <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
                   <Car className="w-6 h-6" />
@@ -184,8 +184,8 @@ export default function Home() {
           </motion.div>
 
           {/* Card 3: About Owner */}
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -5 }}>
-            <Link href="/about" className="group block bg-zinc-950 border border-white/10 rounded-3xl p-8 hover:border-orange-500/50 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.02 }} transition={{ duration: 0.3 }}>
+            <Link href="/about" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
               <div className="space-y-4 z-10">
                 <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
                   <Users className="w-6 h-6" />
@@ -200,8 +200,8 @@ export default function Home() {
           </motion.div>
 
           {/* Card 4: Custom Requests */}
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -5 }} className="md:col-span-2">
-            <Link href="/custom-package" className="group block bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-orange-500/30 rounded-3xl p-8 hover:border-orange-500/60 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.01 }} transition={{ duration: 0.3 }} className="md:col-span-2">
+            <Link href="/custom-package" className="group block bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-orange-500/30 hover:border-orange-500/70 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
               <div className="space-y-3 z-10">
                 <span className="text-xs font-extrabold text-orange-500 uppercase tracking-widest bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">Tailor-Made Expeditions</span>
                 <h3 className="text-3xl font-black text-white">Bespoke Travel Requests</h3>

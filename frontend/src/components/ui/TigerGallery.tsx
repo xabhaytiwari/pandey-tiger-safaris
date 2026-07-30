@@ -69,11 +69,11 @@ export default function TigerGallery() {
   return (
     <section className="space-y-8 py-12">
       <div className="text-center space-y-3">
-        <span className="text-xs font-mono uppercase tracking-widest text-orange-500 font-bold flex items-center justify-center gap-1.5">
-          <Sparkles className="w-4 h-4" /> Royal Bengal Predators
+        <span className="text-xs font-mono uppercase tracking-widest text-orange-500 font-extrabold flex items-center justify-center gap-1.5">
+          <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" /> Royal Bengal Predators
         </span>
-        <h2 className="text-3xl md:text-5xl font-extrabold text-white">Tigers & Heritage of MP</h2>
-        <p className="text-zinc-400 text-sm max-w-2xl mx-auto">Explore high-definition tiger sightings and ancient monuments across Bandhavgarh, Kanha, Pench, and Panna reserves.</p>
+        <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight">Tigers & Heritage of MP</h2>
+        <p className="text-zinc-400 text-sm max-w-2xl mx-auto font-light">Explore high-definition tiger sightings and ancient monuments across Bandhavgarh, Kanha, Pench, and Panna reserves.</p>
       </div>
 
       {/* Park Filter Tabs */}
@@ -84,8 +84,8 @@ export default function TigerGallery() {
             onClick={() => setSelectedFilter(park)}
             className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
               selectedFilter === park
-                ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
-                : "bg-zinc-950 border border-white/10 text-zinc-400 hover:text-white"
+                ? "bg-orange-500 text-black shadow-lg shadow-orange-500/25"
+                : "bg-zinc-950 border border-white/10 text-zinc-400 hover:text-white hover:border-orange-500/40"
             }`}
           >
             {park}
@@ -93,7 +93,7 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* Photo Grid */}
+      {/* Photo Grid with Smooth Hover Lift */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPhotos.map((photo) => (
           <motion.div
@@ -101,15 +101,16 @@ export default function TigerGallery() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            whileHover={{ y: -6 }}
-            className="group relative bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer"
+            whileHover={{ y: -8, scale: 1.02 }}
+            transition={{ duration: 0.3 }}
+            className="group relative bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl overflow-hidden shadow-2xl cursor-pointer"
             onClick={() => setActiveLightBox(photo)}
           >
             <div className="relative h-72 w-full overflow-hidden">
               <img
                 src={photo.image_url}
                 alt={photo.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
             </div>
@@ -132,7 +133,7 @@ export default function TigerGallery() {
       <AnimatePresence>
         {activeLightBox && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative max-w-4xl w-full bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative max-w-4xl w-full bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
               <button onClick={() => setActiveLightBox(null)} className="absolute top-4 right-4 z-20 bg-black/80 p-2.5 rounded-full text-white hover:text-orange-400 border border-white/10">
                 <X className="w-5 h-5" />
               </button>
@@ -142,11 +143,11 @@ export default function TigerGallery() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
 
                 <div className="absolute bottom-6 left-6 right-6 space-y-2 text-white">
-                  <span className="text-xs font-bold text-black bg-orange-500 px-3 py-1 rounded-full uppercase tracking-wider">
+                  <span className="text-xs font-extrabold text-black bg-orange-500 px-3 py-1 rounded-full uppercase tracking-wider">
                     {activeLightBox.park} Sanctuary
                   </span>
                   <h3 className="text-3xl font-extrabold text-white">{activeLightBox.title}</h3>
-                  <p className="text-sm text-zinc-300 max-w-xl">{activeLightBox.caption}</p>
+                  <p className="text-sm text-zinc-300 max-w-xl font-light">{activeLightBox.caption}</p>
                 </div>
               </div>
             </motion.div>
