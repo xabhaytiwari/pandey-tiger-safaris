@@ -18,12 +18,13 @@ const SEED_DATA = {
     bio: "Dinesh Pandey (+91 9425331205) is the proud business owner of Pandey Tiger Safaris across Madhya Pradesh's tiger reserves. Dinesh provides end-to-end tour and travel management—offering complete safari packages, luxury vehicle fleets (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed forest guides and tiger trackers on demand.",
     image_url: "/dinesh-pandey.jpg"
   },
+  // Pre-seeded 5 Madhya Pradesh National Parks
   parks: [
-    { id: "park_1", name: "Bandhavgarh National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800" },
-    { id: "park_2", name: "Kanha National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800" },
-    { id: "park_3", name: "Pench National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800" },
-    { id: "park_4", name: "Panna National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800" },
-    { id: "park_5", name: "Satpura National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" }
+    { id: "park_1", name: "Bandhavgarh National Park", state: "Madhya Pradesh", image_url: "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg" },
+    { id: "park_2", name: "Kanha National Park", state: "Madhya Pradesh", image_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrZoWc_WzK25PAeBO-8XQb3gf8AgEfVEnridQ2osZ7Eci7pYCYmDrE3yes&s=10" },
+    { id: "park_3", name: "Pench National Park", state: "Madhya Pradesh", image_url: "https://indiantigersafaris.com/wp-content/uploads/2025/10/Pench-Tiger-Safari-Tour-Package.webp" },
+    { id: "park_4", name: "Panna National Park", state: "Madhya Pradesh", image_url: "https://images.pexels.com/photos/21896819/pexels-photo-21896819.jpeg" },
+    { id: "park_5", name: "Satpura National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1500463959177-e0869687df26?auto=format&fit=crop&q=80&w=800" }
   ],
   cars: [
     { 
@@ -72,7 +73,7 @@ const SEED_DATA = {
       is_representative: true
     }
   ],
-  packages: [], // ZERO placeholders. All packages loaded live from Cloud Firestore!
+  packages: [],
   drivers: [],
   blocked_dates: [],
   reviews: [
@@ -96,6 +97,13 @@ async function getCollectionData(collectionName: string, fallbackData: any) {
     const snapshot = await getDocs(colRef);
     if (!snapshot.empty) {
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    // Auto-seed Firestore if collection is empty
+    if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+      for (const item of fallbackData) {
+        await setDoc(doc(db, collectionName, item.id || String(Math.random())), item);
+      }
     }
     return fallbackData;
   } catch (error) {

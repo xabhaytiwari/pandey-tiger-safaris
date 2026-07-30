@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, CheckCircle2, LogOut, Calendar as CalendarIcon, User, Mail, Phone, 
   PlusCircle, Upload, Tag, X, FileText, Package, UserCheck, Star, MapPin, 
-  ChevronLeft, ChevronRight, Ban, Trash2, Clock, Sun, Sunset
+  ChevronLeft, ChevronRight, Ban, Trash2, Clock
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -48,12 +48,11 @@ export default function AdminDashboard() {
     image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
   });
 
-  // Package Form State with Hotel Star Rating
   const [packageForm, setPackageForm] = useState({
     park_name: "Bandhavgarh National Park",
     title: "",
     duration: "3 Days / 2 Nights",
-    hotel_stars: "5-Star Ultra-Luxury Resort", // "3-Star Comfort Resort" | "4-Star Luxury Lodge" | "5-Star Ultra-Luxury Resort"
+    hotel_stars: "5-Star Ultra-Luxury Resort",
     price_inr: 28500,
     description: "",
     highlights: "4 Safaris, Luxury Resort Stay, Station Pickup",
@@ -189,8 +188,8 @@ export default function AdminDashboard() {
         createdAt: serverTimestamp(),
       });
       setIsBlockDateModalOpen(false);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      alert("Error blocking date: " + err.message);
     }
   };
 
@@ -207,8 +206,9 @@ export default function AdminDashboard() {
     try {
       await addDoc(collection(db, "parks"), { ...parkForm, createdAt: serverTimestamp() });
       setIsParkModalOpen(false);
-    } catch (err) {
-      console.error(err);
+      setParkForm({ name: "", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800" });
+    } catch (err: any) {
+      alert("Error creating park: " + err.message);
     }
   };
 
@@ -217,8 +217,8 @@ export default function AdminDashboard() {
     try {
       await addDoc(collection(db, "packages"), { ...packageForm, createdAt: serverTimestamp() });
       setIsPackageModalOpen(false);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      alert("Error creating package: " + err.message);
     }
   };
 
@@ -236,14 +236,15 @@ export default function AdminDashboard() {
     try {
       await addDoc(collection(db, "drivers"), {
         name: driverForm.name,
-        experience_years: driverForm.experience_years,
-        rating: driverForm.rating,
+        experience_years: Number(driverForm.experience_years),
+        rating: Number(driverForm.rating),
         photo_url: driverForm.photo_base64,
         createdAt: serverTimestamp(),
       });
       setIsDriverModalOpen(false);
-    } catch (err) {
-      console.error(err);
+      setDriverForm({ name: "", experience_years: 10, rating: 4.9, photo_base64: "" });
+    } catch (err: any) {
+      alert("Error creating driver: " + err.message);
     }
   };
 
@@ -261,8 +262,8 @@ export default function AdminDashboard() {
     try {
       await addDoc(collection(db, "bookings"), { ...offlineForm, createdAt: serverTimestamp() });
       setIsOfflineModalOpen(false);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      alert("Error creating offline booking: " + err.message);
     }
   };
 
@@ -450,26 +451,57 @@ export default function AdminDashboard() {
             )}
           </section>
 
-          {/* Published Packages with Hotel Star Ratings */}
+          {/* Blocked Dates List */}
+          {blockedDatesList.length > 0 && (
+            <section className="bg-zinc-950 border border-red-500/20 rounded-3xl p-6 space-y-3">
+              <h3 className="text-sm font-bold text-red-400 flex items-center gap-2">
+                <Ban className="w-4 h-4" /> Currently Blocked / Excluded Dates ({blockedDatesList.length})
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {blockedDatesList.map(b => (
+                  <div key={b.id} className="bg-red-500/10 border border-red-500/30 px-3.5 py-2 rounded-xl text-xs text-red-300 flex items-center gap-2">
+                    <span><strong>{b.date}</strong> ({b.reason})</span>
+                    <button onClick={() => handleUnblockDate(b.id)} className="text-red-400 hover:text-white ml-2" title="Unblock Date">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* National Parks List */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Package className="w-5 h-5 text-orange-500" /> Tour Packages ({packagesList.length})
+              <MapPin className="w-5 h-5 text-orange-500" /> Active National Parks ({parksList.length})
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {parksList.map((p) => (
+                <div key={p.id} className="bg-zinc-950 border border-white/10 p-3 rounded-2xl text-center space-y-1 text-xs">
+                  <p className="font-bold text-white">{p.name}</p>
+                  <p className="text-[10px] text-zinc-500">{p.state}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Published Drivers */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-orange-500" /> Active Drivers ({driversList.length})
             </h2>
 
-            {packagesList.length === 0 ? (
-              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No packages published yet. Click &quot;+ Add Package&quot; to publish one.</p>
+            {driversList.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No drivers registered yet. Click &quot;+ Add Driver&quot; to upload driver photo & details.</p>
             ) : (
-              <div className="grid md:grid-cols-2 gap-4">
-                {packagesList.map((p) => (
-                  <div key={p.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex gap-4 text-xs">
-                    <img src={p.image_url} alt={p.title} className="w-24 h-24 object-cover rounded-xl" />
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-orange-400 font-bold uppercase">{p.park_name || "Bandhavgarh"}</span>
-                        <span className="text-[10px] text-amber-400 font-bold border border-amber-500/30 px-2 py-0.5 rounded-full">{p.hotel_stars || "5-Star Resort"}</span>
-                      </div>
-                      <h4 className="font-bold text-white text-sm">{p.title}</h4>
-                      <p className="text-orange-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
+              <div className="grid md:grid-cols-3 gap-4">
+                {driversList.map((d) => (
+                  <div key={d.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex items-center gap-4 text-xs">
+                    <img src={d.photo_url || d.photo_base64} alt={d.name} className="w-16 h-16 object-cover rounded-full border border-orange-500/30" />
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{d.name}</h4>
+                      <p className="text-zinc-400">{d.experience_years} Years Experience</p>
+                      <p className="text-orange-400 flex items-center gap-1 font-bold"><Star className="w-3 h-3 fill-orange-400" /> {d.rating} Rating</p>
                     </div>
                   </div>
                 ))}
@@ -477,7 +509,7 @@ export default function AdminDashboard() {
             )}
           </section>
 
-          {/* Bookings List with Safari Slot & Hotel Rating */}
+          {/* Bookings List */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Tag className="w-5 h-5 text-orange-500" /> Bookings & ID Proofs ({filteredBookings.length})
@@ -527,7 +559,65 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Add Tour Package Modal with Hotel Star Rating */}
+      {/* Add Block Date Modal */}
+      <AnimatePresence>
+        {isBlockDateModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-red-500/30 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-red-400 flex items-center gap-2">
+                  <Ban className="w-5 h-5" /> Block / Exclude Safari Date
+                </h3>
+                <button onClick={() => setIsBlockDateModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleBlockDateSubmit} className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-zinc-400 mb-1">Date to Block</label>
+                  <input type="date" required value={blockForm.date} onChange={(e) => setBlockForm({...blockForm, date: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <div>
+                  <label className="block text-zinc-400 mb-1">Reason for Exclusion</label>
+                  <input type="text" placeholder="e.g. Park Maintenance / Holiday / Private Group" required value={blockForm.reason} onChange={(e) => setBlockForm({...blockForm, reason: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <button type="submit" className="w-full bg-red-500 text-white font-extrabold py-3.5 rounded-xl text-sm hover:bg-red-600 transition-all">
+                  Exclude Date from Booking Dropdown
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add National Park Modal */}
+      <AnimatePresence>
+        {isParkModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
+                  <MapPin className="w-5 h-5" /> Add National Park
+                </h3>
+                <button onClick={() => setIsParkModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreatePark} className="space-y-3 text-xs">
+                <input type="text" placeholder="Park Name (e.g. Satpura National Park)" required value={parkForm.name} onChange={(e) => setParkForm({...parkForm, name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                <input type="text" placeholder="State (e.g. Madhya Pradesh)" required value={parkForm.state} onChange={(e) => setParkForm({...parkForm, state: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                <input type="url" placeholder="Park Image URL" required value={parkForm.image_url} onChange={(e) => setParkForm({...parkForm, image_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+
+                <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3 rounded-xl text-sm hover:bg-orange-400 transition-all">
+                  Save National Park
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Package Modal */}
       <AnimatePresence>
         {isPackageModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
@@ -571,6 +661,50 @@ export default function AdminDashboard() {
 
                 <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all">
                   Publish Package to Cloud
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Driver Modal */}
+      <AnimatePresence>
+        {isDriverModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-lg rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
+                  <UserCheck className="w-5 h-5" /> Register Safari Driver
+                </h3>
+                <button onClick={() => setIsDriverModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreateDriver} className="space-y-3 text-xs">
+                <input type="text" placeholder="Driver Full Name" required value={driverForm.name} onChange={(e) => setDriverForm({...driverForm, name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="number" placeholder="Experience Years" required value={driverForm.experience_years} onChange={(e) => setDriverForm({...driverForm, experience_years: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                  <input type="number" step="0.1" max="5.0" placeholder="Rating" required value={driverForm.rating} onChange={(e) => setDriverForm({...driverForm, rating: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <div className="border border-dashed border-white/20 p-4 rounded-xl text-center space-y-2">
+                  <Upload className="w-6 h-6 text-orange-500 mx-auto" />
+                  <p className="text-zinc-300 font-semibold">Upload Driver Photo</p>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    required 
+                    onChange={handleDriverPhotoUpload} 
+                    className="block w-full text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:bg-orange-500 file:text-black file:font-bold hover:file:bg-orange-400 cursor-pointer" 
+                  />
+                  {driverForm.photo_base64 && (
+                    <img src={driverForm.photo_base64} alt="Driver Preview" className="w-20 h-20 object-cover mx-auto rounded-full border border-orange-500/50 mt-2" />
+                  )}
+                </div>
+
+                <button type="submit" disabled={!driverForm.photo_base64} className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all disabled:opacity-50">
+                  Register Driver
                 </button>
               </form>
             </motion.div>
