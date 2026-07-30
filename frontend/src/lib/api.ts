@@ -111,9 +111,23 @@ export async function submitBooking(payload: any) {
       booking_source: payload.booking_source || "web_prepaid",
       payment_status: payload.payment_status || "Advance Paid",
     });
-    return { status: "success", booking_id: docRef.id, message: "Safari booking request saved to Cloud Firestore!" };
+    return { status: "success", booking_id: docRef.id, message: "Safari booking saved!" };
   } catch (error: any) {
     console.error("Booking error:", error);
+    return { status: "error", message: error.message };
+  }
+}
+
+// Create Tour Package in Firestore (Admin)
+export async function addTourPackage(payload: any) {
+  try {
+    const docRef = await addDoc(collection(db, "packages"), {
+      ...payload,
+      createdAt: serverTimestamp(),
+    });
+    return { status: "success", package_id: docRef.id };
+  } catch (error: any) {
+    console.error("Error adding package:", error);
     return { status: "error", message: error.message };
   }
 }
@@ -125,9 +139,9 @@ export async function submitCustomPackage(payload: any) {
       createdAt: serverTimestamp(),
       assignedTo: "Dinesh Pandey (9425331205)"
     });
-    return { status: "success", request_id: docRef.id, message: "Custom package request submitted!" };
+    return { status: "success", request_id: docRef.id };
   } catch (error: any) {
-    console.error("Custom package request error:", error);
+    console.error("Custom package error:", error);
     return { status: "error", message: error.message };
   }
 }
