@@ -1,13 +1,35 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import TypewriterHero from "../components/ui/TypewriterHero";
 import TigerGallery from "../components/ui/TigerGallery";
 import GallerySlideshow from "../components/ui/GallerySlideshow";
 import { Compass, Sparkles, ArrowRight, Car, Users } from "lucide-react";
 
 export default function Home() {
+  // Exact Tiger & Shesh Shaiya background images array (Default 1st: Bandhavgarh Tiger)
+  const heroBackgrounds = [
+    "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg",
+    "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/4b18dd77fedec8fa7534763a1d447f30e8e2cdf9.jpg",
+    "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/fd12f9eb116e2dab9e5dcdc0dac018e9af8ef83d.jpg",
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrZoWc_WzK25PAeBO-8XQb3gf8AgEfVEnridQ2osZ7Eci7pYCYmDrE3yes&s=10",
+    "https://indiantigersafaris.com/wp-content/uploads/2025/10/Pench-Tiger-Safari-Tour-Package.webp",
+    "https://images.pexels.com/photos/21896819/pexels-photo-21896819.jpeg",
+    "https://chalbanjare.com/crmnew/img_master/package/SheshShaiyaVishnuIdol_17719322670.webp"
+  ];
+
+  const [bgIndex, setBgIndex] = useState(0);
+
+  // Background Autoplay Cross-Fade Effect (4 Seconds Interval)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setBgIndex((prev) => (prev + 1) % heroBackgrounds.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [heroBackgrounds.length]);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -23,23 +45,40 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-black text-white px-4">
-      {/* Background Glow */}
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-orange-500/10 blur-[150px] rounded-full" />
-      </div>
-
       {/* Hero Section */}
-      <section className="relative max-w-6xl mx-auto pt-28 pb-20 md:pt-36 md:pb-24 flex flex-col items-center text-center">
+      <section className="relative max-w-6xl mx-auto pt-28 pb-20 md:pt-36 md:pb-28 flex flex-col items-center text-center overflow-hidden rounded-3xl my-4 border border-white/10">
+        
+        {/* Autoplay Background Image Carousel with Blur & Gradient Mask */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={heroBackgrounds[bgIndex]}
+              src={heroBackgrounds[bgIndex]}
+              alt="Tiger Background"
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 0.35, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 1.2, ease: "easeInOut" }}
+              className="w-full h-full object-cover filter blur-[3px]"
+            />
+          </AnimatePresence>
+
+          {/* Gradient Masks (Top & Bottom Fade to Jet Black #000000) */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black" />
+        </div>
+
+        {/* Hero Content */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-8 max-w-4xl"
+          className="relative z-10 space-y-8 max-w-4xl"
         >
           {/* Badge */}
           <motion.div variants={itemVariants} className="inline-flex">
             <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-extrabold uppercase tracking-widest backdrop-blur-xl shadow-lg shadow-orange-500/10">
-              <Sparkles className="w-4 h-4 text-orange-500" /> Business Owner • Dinesh Pandey (+91 9425331205)
+              <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" /> Business Owner • Dinesh Pandey (+91 9425331205)
             </span>
           </motion.div>
 
@@ -50,7 +89,7 @@ export default function Home() {
           </motion.h1>
 
           {/* Description */}
-          <motion.p variants={itemVariants} className="text-zinc-400 text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed">
+          <motion.p variants={itemVariants} className="text-zinc-300 text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed backdrop-blur-xs">
             Spearheaded by business owner Dinesh Pandey (+91 9425331205). Complete tour packages, luxury transport (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed safari guides on demand.
           </motion.p>
 
@@ -63,7 +102,7 @@ export default function Home() {
             </motion.div>
 
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
-              <Link href="/custom-package" className="w-full sm:w-auto px-9 py-4 bg-zinc-900 border border-white/15 text-white font-bold text-sm rounded-full hover:bg-zinc-800 transition-all flex items-center justify-center gap-2.5 backdrop-blur-xl">
+              <Link href="/custom-package" className="w-full sm:w-auto px-9 py-4 bg-zinc-900/90 border border-white/15 text-white font-bold text-sm rounded-full hover:bg-zinc-800 transition-all flex items-center justify-center gap-2.5 backdrop-blur-xl">
                 Custom Safari Request <ArrowRight className="w-4 h-4 text-orange-500" />
               </Link>
             </motion.div>
@@ -73,19 +112,19 @@ export default function Home() {
           <motion.div variants={itemVariants} className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto border-t border-white/10 text-center">
             <div>
               <p className="text-3xl font-black text-orange-500">20+</p>
-              <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Years Experience</p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Years Experience</p>
             </div>
             <div>
               <p className="text-3xl font-black text-white">5 Reserves</p>
-              <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">MP Tiger Parks</p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">MP Tiger Parks</p>
             </div>
             <div>
               <p className="text-3xl font-black text-orange-500">Fleet</p>
-              <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Innova / Traveller</p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Innova / Traveller</p>
             </div>
             <div>
               <p className="text-3xl font-black text-white">Guides</p>
-              <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Army of Experts</p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Army of Experts</p>
             </div>
           </motion.div>
         </motion.div>
@@ -125,7 +164,7 @@ export default function Home() {
                 Explore All Packages <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
               </div>
               <div className="absolute right-0 bottom-0 opacity-25 group-hover:opacity-40 transition-opacity">
-                <img src="https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800" alt="Tiger" className="w-80 h-80 object-cover rounded-tl-3xl" />
+                <img src="https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg" alt="Tiger" className="w-80 h-80 object-cover rounded-tl-3xl" />
               </div>
             </Link>
           </motion.div>

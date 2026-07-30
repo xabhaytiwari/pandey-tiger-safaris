@@ -8,45 +8,52 @@ export default function TigerGallery() {
   const tigerPhotos = [
     {
       id: 1,
-      title: "Royal Bengal Tiger in Tala Zone",
+      title: "Royal Bengal Tiger (Tala Zone)",
       park: "Bandhavgarh",
-      image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=1200",
-      caption: "Dominant male tiger patrolling bamboo thickets in Bandhavgarh Tala Gate."
+      image_url: "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg",
+      caption: "Dominant Royal Bengal tiger patrolling the core bamboo tracks of Bandhavgarh National Park."
     },
     {
       id: 2,
-      title: "Kanha Meadow Apex Predator",
-      park: "Kanha",
-      image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=1200",
-      caption: "Morning mist tracking across sal forests and open meadows in Kanha National Park."
+      title: "Bandhavgarh Apex Predator",
+      park: "Bandhavgarh",
+      image_url: "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/4b18dd77fedec8fa7534763a1d447f30e8e2cdf9.jpg",
+      caption: "Tiger crossing forest tracks during early morning safari in Bandhavgarh Tiger Reserve."
     },
     {
       id: 3,
-      title: "Pench Jungle Stream Stalker",
-      park: "Pench",
-      image_url: "https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&q=80&w=1200",
-      caption: "Bengal tiger cooling off along dry riverbed rocks in Pench Tiger Reserve."
+      title: "Bandhavgarh Forest Monarch",
+      park: "Bandhavgarh",
+      image_url: "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/fd12f9eb116e2dab9e5dcdc0dac018e9af8ef83d.jpg",
+      caption: "Majestic Bengal tiger resting under teak canopy shade."
     },
     {
       id: 4,
-      title: "Panna Tiger Sanctuary",
-      park: "Panna",
-      image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1200",
-      caption: "Tigress camouflaged in teak canopy forests along the Ken River."
+      title: "Kanha Meadow Predator",
+      park: "Kanha",
+      image_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrZoWc_WzK25PAeBO-8XQb3gf8AgEfVEnridQ2osZ7Eci7pYCYmDrE3yes&s=10",
+      caption: "Morning mist tracking across sal forests and open meadows in Kanha National Park."
     },
     {
       id: 5,
-      title: "Satpura Mystic Forest Tiger",
-      park: "Satpura",
-      image_url: "https://images.unsplash.com/photo-1500463959177-e0869687df26?auto=format&fit=crop&q=80&w=1200",
-      caption: "Sighting along Satpura's rugged sandstone hills and Denwa river banks."
+      title: "Pench Tiger Safari Trail",
+      park: "Pench",
+      image_url: "https://indiantigersafaris.com/wp-content/uploads/2025/10/Pench-Tiger-Safari-Tour-Package.webp",
+      caption: "Royal Bengal tiger sighting in the teak forests of Pench National Park."
     },
     {
       id: 6,
-      title: "Tala Gate Waterhole Sighting",
+      title: "Panna Tiger Sanctuary",
+      park: "Panna",
+      image_url: "https://images.pexels.com/photos/21896819/pexels-photo-21896819.jpeg",
+      caption: "Tigress camouflaged in teak canopy forests along the Ken River."
+    },
+    {
+      id: 7,
+      title: "Tala Shesh Shaiya Vishnu Idol",
       park: "Bandhavgarh",
-      image_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1200",
-      caption: "Intense gaze of a Royal Bengal tiger resting in summer waterholes."
+      image_url: "https://chalbanjare.com/crmnew/img_master/package/SheshShaiyaVishnuIdol_17719322670.webp",
+      caption: "Ancient 65-foot carved Vishnu idol lying on Sheshnag inside Bandhavgarh Tala Zone."
     }
   ];
 
@@ -57,7 +64,7 @@ export default function TigerGallery() {
     ? tigerPhotos
     : tigerPhotos.filter(p => p.park === selectedFilter);
 
-  const parks = ["All", "Bandhavgarh", "Kanha", "Pench", "Panna", "Satpura"];
+  const parks = ["All", "Bandhavgarh", "Kanha", "Pench", "Panna"];
 
   return (
     <section className="space-y-8 py-12">
@@ -65,8 +72,8 @@ export default function TigerGallery() {
         <span className="text-xs font-mono uppercase tracking-widest text-orange-500 font-bold flex items-center justify-center gap-1.5">
           <Sparkles className="w-4 h-4" /> Royal Bengal Predators
         </span>
-        <h2 className="text-3xl md:text-5xl font-extrabold text-white">Tigers of Madhya Pradesh</h2>
-        <p className="text-zinc-400 text-sm max-w-2xl mx-auto">Explore high-definition tiger sightings captured across Bandhavgarh, Kanha, Pench, Panna, and Satpura reserves.</p>
+        <h2 className="text-3xl md:text-5xl font-extrabold text-white">Tigers & Heritage of MP</h2>
+        <p className="text-zinc-400 text-sm max-w-2xl mx-auto">Explore high-definition tiger sightings and ancient monuments across Bandhavgarh, Kanha, Pench, and Panna reserves.</p>
       </div>
 
       {/* Park Filter Tabs */}
@@ -113,7 +120,7 @@ export default function TigerGallery() {
 
             <div className="absolute bottom-5 left-5 right-5 space-y-1 text-white">
               <span className="text-[10px] uppercase font-bold text-orange-400 bg-orange-500/20 border border-orange-500/30 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> {photo.park} Reserve
+                <MapPin className="w-3 h-3" /> {photo.park}
               </span>
               <h4 className="font-bold text-lg text-white">{photo.title}</h4>
             </div>
@@ -136,7 +143,7 @@ export default function TigerGallery() {
 
                 <div className="absolute bottom-6 left-6 right-6 space-y-2 text-white">
                   <span className="text-xs font-bold text-black bg-orange-500 px-3 py-1 rounded-full uppercase tracking-wider">
-                    {activeLightBox.park} Tiger Reserve
+                    {activeLightBox.park} Sanctuary
                   </span>
                   <h3 className="text-3xl font-extrabold text-white">{activeLightBox.title}</h3>
                   <p className="text-sm text-zinc-300 max-w-xl">{activeLightBox.caption}</p>
