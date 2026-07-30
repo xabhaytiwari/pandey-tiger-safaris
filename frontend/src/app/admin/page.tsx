@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, CheckCircle2, LogOut, Calendar as CalendarIcon, User, Mail, Phone, 
   PlusCircle, Upload, Tag, X, FileText, Package, UserCheck, Star, MapPin, 
-  ChevronLeft, ChevronRight, Ban, Trash2, Clock
+  ChevronLeft, ChevronRight, Ban, Trash2
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [inputOtp, setInputOtp] = useState("");
+  const [maskedEmail, setMaskedEmail] = useState("s***i@gmail.com");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
     image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
   });
 
+  // Package Form State
   const [packageForm, setPackageForm] = useState({
     park_name: "Bandhavgarh National Park",
     title: "",
@@ -92,6 +94,14 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  // Sync park_name default when parksList loads
+  useEffect(() => {
+    if (parksList.length > 0 && !packageForm.park_name) {
+      setPackageForm(prev => ({ ...prev, park_name: parksList[0].name }));
+      setOfflineForm(prev => ({ ...prev, park_name: parksList[0].name }));
+    }
+  }, [parksList]);
+
   useEffect(() => {
     if (authStep !== "authenticated") return;
 
@@ -112,7 +122,8 @@ export default function AdminDashboard() {
     });
 
     const unsubParks = onSnapshot(collection(db, "parks"), (snapshot) => {
-      setParksList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const pDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setParksList(pDocs);
     });
 
     const unsubBlocked = onSnapshot(collection(db, "blocked_dates"), (snapshot) => {
@@ -143,6 +154,7 @@ export default function AdminDashboard() {
       const data = await res.json();
 
       if (data.success) {
+        setMaskedEmail(data.maskedEmail || "s***i@gmail.com");
         setAuthStep("2fa");
       } else {
         setError(data.error || "Authentication failed");
@@ -215,8 +227,22 @@ export default function AdminDashboard() {
   const handleCreatePackage = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, "packages"), { ...packageForm, createdAt: serverTimestamp() });
+      await addDoc(collection(db, "packages"), {
+        ...packageForm,
+        park_name: packageForm.park_name || (parksList[0]?.name || "Bandhavgarh National Park"),
+        createdAt: serverTimestamp(),
+      });
       setIsPackageModalOpen(false);
+      setPackageForm({
+        park_name: parksList[0]?.name || "Bandhavgarh National Park",
+        title: "",
+        duration: "3 Days / 2 Nights",
+        hotel_stars: "5-Star Ultra-Luxury Resort",
+        price_inr: 28500,
+        description: "",
+        highlights: "4 Safaris, Luxury Resort Stay, Station Pickup",
+        image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
+      });
     } catch (err: any) {
       alert("Error creating package: " + err.message);
     }
@@ -339,7 +365,7 @@ export default function AdminDashboard() {
             {authStep === "2fa" && (
               <form onSubmit={handleVerify2FA} className="space-y-4">
                 <div className="bg-orange-500/10 border border-orange-500/30 p-3.5 rounded-xl text-xs text-orange-300">
-                  2FA Verification Code dispatched to: <strong className="text-white block mt-0.5">singhabhaytiwari@gmail.com</strong>
+                  2FA Verification Code dispatched to authorized email: <strong className="text-white block mt-0.5">{maskedEmail}</strong>
                 </div>
 
                 <div>
@@ -451,25 +477,6 @@ export default function AdminDashboard() {
             )}
           </section>
 
-          {/* Blocked Dates List */}
-          {blockedDatesList.length > 0 && (
-            <section className="bg-zinc-950 border border-red-500/20 rounded-3xl p-6 space-y-3">
-              <h3 className="text-sm font-bold text-red-400 flex items-center gap-2">
-                <Ban className="w-4 h-4" /> Currently Blocked / Excluded Dates ({blockedDatesList.length})
-              </h3>
-              <div className="flex flex-wrap gap-3">
-                {blockedDatesList.map(b => (
-                  <div key={b.id} className="bg-red-500/10 border border-red-500/30 px-3.5 py-2 rounded-xl text-xs text-red-300 flex items-center gap-2">
-                    <span><strong>{b.date}</strong> ({b.reason})</span>
-                    <button onClick={() => handleUnblockDate(b.id)} className="text-red-400 hover:text-white ml-2" title="Unblock Date">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* National Parks List */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -502,6 +509,33 @@ export default function AdminDashboard() {
                       <h4 className="font-bold text-white text-sm">{d.name}</h4>
                       <p className="text-zinc-400">{d.experience_years} Years Experience</p>
                       <p className="text-orange-400 flex items-center gap-1 font-bold"><Star className="w-3 h-3 fill-orange-400" /> {d.rating} Rating</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Published Tour Packages */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Package className="w-5 h-5 text-orange-500" /> Tour Packages ({packagesList.length})
+            </h2>
+
+            {packagesList.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No custom packages published yet. Click &quot;+ Add Package&quot; to publish one.</p>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {packagesList.map((p) => (
+                  <div key={p.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex gap-4 text-xs">
+                    <img src={p.image_url} alt={p.title} className="w-24 h-24 object-cover rounded-xl" />
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-orange-400 font-bold uppercase">{p.park_name || "Bandhavgarh"}</span>
+                        <span className="text-[10px] text-amber-400 font-bold border border-amber-500/30 px-2 py-0.5 rounded-full">{p.hotel_stars || "5-Star Resort"}</span>
+                      </div>
+                      <h4 className="font-bold text-white text-sm">{p.title}</h4>
+                      <p className="text-orange-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
                     </div>
                   </div>
                 ))}
@@ -559,31 +593,61 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Add Block Date Modal */}
+      {/* Add Tour Package Modal with Park Dropdown */}
       <AnimatePresence>
-        {isBlockDateModalOpen && (
+        {isPackageModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-red-500/30 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-lg rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <h3 className="text-lg font-bold text-red-400 flex items-center gap-2">
-                  <Ban className="w-5 h-5" /> Block / Exclude Safari Date
+                <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
+                  <Package className="w-5 h-5" /> Publish Tour Package
                 </h3>
-                <button onClick={() => setIsBlockDateModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+                <button onClick={() => setIsPackageModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
               </div>
 
-              <form onSubmit={handleBlockDateSubmit} className="space-y-3 text-xs">
+              <form onSubmit={handleCreatePackage} className="space-y-3 text-xs">
+                {/* Park Dropdown Mapping */}
                 <div>
-                  <label className="block text-zinc-400 mb-1">Date to Block</label>
-                  <input type="date" required value={blockForm.date} onChange={(e) => setBlockForm({...blockForm, date: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                  <label className="block text-zinc-400 mb-1 font-semibold">Select National Park</label>
+                  <select 
+                    value={packageForm.park_name} 
+                    onChange={(e) => setPackageForm({...packageForm, park_name: e.target.value})} 
+                    className="w-full bg-black border border-white/15 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500 font-bold"
+                  >
+                    {parksList.length === 0 ? (
+                      <option value="Bandhavgarh National Park" className="bg-zinc-900">Bandhavgarh National Park</option>
+                    ) : (
+                      parksList.map(p => (
+                        <option key={p.id} value={p.name} className="bg-zinc-900">{p.name}</option>
+                      ))
+                    )}
+                  </select>
                 </div>
 
-                <div>
-                  <label className="block text-zinc-400 mb-1">Reason for Exclusion</label>
-                  <input type="text" placeholder="e.g. Park Maintenance / Holiday / Private Group" required value={blockForm.reason} onChange={(e) => setBlockForm({...blockForm, reason: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                <input type="text" placeholder="Package Title (e.g. Royal Bengal Expedition)" required value={packageForm.title} onChange={(e) => setPackageForm({...packageForm, title: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Duration</label>
+                    <input type="text" placeholder="e.g. 3 Days / 2 Nights" required value={packageForm.duration} onChange={(e) => setPackageForm({...packageForm, duration: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Hotel Star Rating</label>
+                    <select value={packageForm.hotel_stars} onChange={(e) => setPackageForm({...packageForm, hotel_stars: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white">
+                      <option value="3-Star Comfort Resort">3-Star Comfort Resort</option>
+                      <option value="4-Star Luxury Wildlife Lodge">4-Star Luxury Wildlife Lodge</option>
+                      <option value="5-Star Ultra-Luxury Resort">5-Star Ultra-Luxury Resort</option>
+                    </select>
+                  </div>
                 </div>
 
-                <button type="submit" className="w-full bg-red-500 text-white font-extrabold py-3.5 rounded-xl text-sm hover:bg-red-600 transition-all">
-                  Exclude Date from Booking Dropdown
+                <input type="number" placeholder="Price in INR (₹)" required value={packageForm.price_inr} onChange={(e) => setPackageForm({...packageForm, price_inr: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                <textarea placeholder="Package Description" rows={3} required value={packageForm.description} onChange={(e) => setPackageForm({...packageForm, description: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white"></textarea>
+                <input type="text" placeholder="Highlights (e.g. 4 Safaris, Resort Stay)" required value={packageForm.highlights} onChange={(e) => setPackageForm({...packageForm, highlights: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                <input type="url" placeholder="Cover Image URL" required value={packageForm.image_url} onChange={(e) => setPackageForm({...packageForm, image_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+
+                <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all">
+                  Publish Package to Cloud
                 </button>
               </form>
             </motion.div>
@@ -610,57 +674,6 @@ export default function AdminDashboard() {
 
                 <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3 rounded-xl text-sm hover:bg-orange-400 transition-all">
                   Save National Park
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Add Package Modal */}
-      <AnimatePresence>
-        {isPackageModalOpen && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-white/10 w-full max-w-lg rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <h3 className="text-lg font-bold text-orange-500 flex items-center gap-2">
-                  <Package className="w-5 h-5" /> Publish Tour Package
-                </h3>
-                <button onClick={() => setIsPackageModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
-              </div>
-
-              <form onSubmit={handleCreatePackage} className="space-y-3 text-xs">
-                <div>
-                  <label className="block text-zinc-400 mb-1">Select National Park</label>
-                  <select value={packageForm.park_name} onChange={(e) => setPackageForm({...packageForm, park_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white">
-                    {parksList.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-                  </select>
-                </div>
-
-                <input type="text" placeholder="Package Title" required value={packageForm.title} onChange={(e) => setPackageForm({...packageForm, title: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-orange-500" />
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-zinc-400 mb-1">Duration</label>
-                    <input type="text" placeholder="e.g. 3 Days / 2 Nights" required value={packageForm.duration} onChange={(e) => setPackageForm({...packageForm, duration: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
-                  </div>
-                  <div>
-                    <label className="block text-zinc-400 mb-1">Hotel Star Rating</label>
-                    <select value={packageForm.hotel_stars} onChange={(e) => setPackageForm({...packageForm, hotel_stars: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white">
-                      <option value="3-Star Comfort Resort">3-Star Comfort Resort</option>
-                      <option value="4-Star Luxury Wildlife Lodge">4-Star Luxury Wildlife Lodge</option>
-                      <option value="5-Star Ultra-Luxury Resort">5-Star Ultra-Luxury Resort</option>
-                    </select>
-                  </div>
-                </div>
-
-                <input type="number" placeholder="Price in INR (₹)" required value={packageForm.price_inr} onChange={(e) => setPackageForm({...packageForm, price_inr: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
-                <textarea placeholder="Package Description" rows={3} required value={packageForm.description} onChange={(e) => setPackageForm({...packageForm, description: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white"></textarea>
-                <input type="text" placeholder="Highlights" required value={packageForm.highlights} onChange={(e) => setPackageForm({...packageForm, highlights: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
-                <input type="url" placeholder="Cover Image URL" required value={packageForm.image_url} onChange={(e) => setPackageForm({...packageForm, image_url: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
-
-                <button type="submit" className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all">
-                  Publish Package to Cloud
                 </button>
               </form>
             </motion.div>
@@ -705,6 +718,38 @@ export default function AdminDashboard() {
 
                 <button type="submit" disabled={!driverForm.photo_base64} className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm hover:bg-orange-400 transition-all disabled:opacity-50">
                   Register Driver
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Block Date Modal */}
+      <AnimatePresence>
+        {isBlockDateModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-red-500/30 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-red-400 flex items-center gap-2">
+                  <Ban className="w-5 h-5" /> Block / Exclude Safari Date
+                </h3>
+                <button onClick={() => setIsBlockDateModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleBlockDateSubmit} className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-zinc-400 mb-1">Date to Block</label>
+                  <input type="date" required value={blockForm.date} onChange={(e) => setBlockForm({...blockForm, date: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <div>
+                  <label className="block text-zinc-400 mb-1">Reason for Exclusion</label>
+                  <input type="text" placeholder="e.g. Park Maintenance / Holiday / Private Group" required value={blockForm.reason} onChange={(e) => setBlockForm({...blockForm, reason: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <button type="submit" className="w-full bg-red-500 text-white font-extrabold py-3.5 rounded-xl text-sm hover:bg-red-600 transition-all">
+                  Exclude Date from Booking Dropdown
                 </button>
               </form>
             </motion.div>
