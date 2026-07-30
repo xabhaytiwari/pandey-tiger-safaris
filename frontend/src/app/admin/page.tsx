@@ -4,11 +4,12 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
-import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, CheckCircle2, LogOut, Calendar as CalendarIcon, User, Mail, Phone, 
-  PlusCircle, Upload, Tag, X, FileText, Package, UserCheck, Star, MapPin, ChevronLeft, ChevronRight, ImageIcon
+  PlusCircle, Upload, Tag, X, FileText, Package, UserCheck, Star, MapPin, 
+  ChevronLeft, ChevronRight, Ban, Trash2
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -24,6 +25,7 @@ export default function AdminDashboard() {
   const [packagesList, setPackagesList] = useState<any[]>([]);
   const [driversList, setDriversList] = useState<any[]>([]);
   const [parksList, setParksList] = useState<any[]>([]);
+  const [blockedDatesList, setBlockedDatesList] = useState<any[]>([]);
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [calendarMonthOffset, setCalendarMonthOffset] = useState(0);
@@ -33,6 +35,13 @@ export default function AdminDashboard() {
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
   const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
   const [isParkModalOpen, setIsParkModalOpen] = useState(false);
+  const [isBlockDateModalOpen, setIsBlockDateModalOpen] = useState(false);
+
+  // Block Date Form State
+  const [blockForm, setBlockForm] = useState({
+    date: new Date().toISOString().split("T")[0],
+    reason: "Park Maintenance / Holiday"
+  });
 
   // Park Form State
   const [parkForm, setParkForm] = useState({
@@ -52,7 +61,7 @@ export default function AdminDashboard() {
     image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
   });
 
-  // Add Driver Form State (File Upload Base64)
+  // Add Driver Form State
   const [driverForm, setDriverForm] = useState({
     name: "",
     experience_years: 10,
@@ -110,12 +119,17 @@ export default function AdminDashboard() {
       setParksList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    const unsubBlocked = onSnapshot(collection(db, "blocked_dates"), (snapshot) => {
+      setBlockedDatesList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     return () => {
       unsubBookings();
       unsubCustom();
       unsubPackages();
       unsubDrivers();
       unsubParks();
+      unsubBlocked();
     };
   }, [authStep]);
 
@@ -170,12 +184,32 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleBlockDateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, "blocked_dates"), {
+        ...blockForm,
+        createdAt: serverTimestamp(),
+      });
+      setIsBlockDateModalOpen(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUnblockDate = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "blocked_dates", id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleCreatePark = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await addDoc(collection(db, "parks"), { ...parkForm, createdAt: serverTimestamp() });
       setIsParkModalOpen(false);
-      setParkForm({ name: "", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800" });
     } catch (err) {
       console.error(err);
     }
@@ -191,19 +225,15 @@ export default function AdminDashboard() {
     }
   };
 
-  // Convert Uploaded Driver Photo to Base64
   const handleDriverPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setDriverForm(prev => ({ ...prev, photo_base64: reader.result as string }));
-      };
+      reader.onloadend = () => setDriverForm(prev => ({ ...prev, photo_base64: reader.result as string }));
       reader.readAsDataURL(file);
     }
   };
 
-  // Create New Driver
   const handleCreateDriver = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -215,14 +245,8 @@ export default function AdminDashboard() {
         createdAt: serverTimestamp(),
       });
       setIsDriverModalOpen(false);
-      setDriverForm({
-        name: "",
-        experience_years: 10,
-        rating: 4.9,
-        photo_base64: ""
-      });
     } catch (err) {
-      console.error("Error creating driver:", err);
+      console.error(err);
     }
   };
 
@@ -257,7 +281,8 @@ export default function AdminDashboard() {
       const d = new Date(startDate.getFullYear(), startDate.getMonth(), day);
       const dateStr = d.toISOString().split("T")[0];
       const count = bookings.filter(b => b.booking_date === dateStr).length;
-      result.push({ dateStr, count });
+      const isBlocked = blockedDatesList.some(b => b.date === dateStr);
+      result.push({ dateStr, count, isBlocked });
     }
     return result;
   };
@@ -352,6 +377,10 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <button onClick={() => setIsBlockDateModalOpen(true)} className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 font-bold px-3.5 py-2 rounded-full text-xs flex items-center gap-1.5 transition-all">
+                <Ban className="w-3.5 h-3.5" /> Block Date
+              </button>
+
               <button onClick={() => setIsParkModalOpen(true)} className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white font-bold px-3.5 py-2 rounded-full text-xs flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-orange-500" /> + Add Park
               </button>
@@ -379,7 +408,7 @@ export default function AdminDashboard() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <CalendarIcon className="w-5 h-5 text-orange-500" /> 365-Day Interactive Calendar ({monthName})
+                  <CalendarIcon className="w-5 h-5 text-orange-500" /> 365-Day Calendar ({monthName})
                 </h2>
                 <p className="text-xs text-zinc-400">Click a date to filter bookings</p>
               </div>
@@ -394,11 +423,12 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5 pt-2 max-h-72 overflow-y-auto">
-              {getMonthCalendarDates().map(({ dateStr, count }) => {
+              {getMonthCalendarDates().map(({ dateStr, count, isBlocked }) => {
                 const isSelected = selectedDate === dateStr;
                 let colorStyle = "bg-emerald-500/10 border-emerald-500/30 text-emerald-300";
                 if (count === 1) colorStyle = "bg-amber-500/20 border-amber-500/50 text-amber-300";
                 if (count >= 2) colorStyle = "bg-rose-500/20 border-rose-500/50 text-rose-300";
+                if (isBlocked) colorStyle = "bg-red-500/20 border-red-500/60 text-red-400 line-through";
 
                 return (
                   <button
@@ -409,7 +439,7 @@ export default function AdminDashboard() {
                     }`}
                   >
                     <p className="text-[10px] uppercase font-mono tracking-wider">{dateStr}</p>
-                    <p className="text-sm font-extrabold mt-0.5">{count} Booked</p>
+                    <p className="text-sm font-extrabold mt-0.5">{isBlocked ? "Blocked" : `${count} Booked`}</p>
                   </button>
                 );
               })}
@@ -422,6 +452,25 @@ export default function AdminDashboard() {
               </div>
             )}
           </section>
+
+          {/* Blocked Dates List */}
+          {blockedDatesList.length > 0 && (
+            <section className="bg-zinc-950 border border-red-500/20 rounded-3xl p-6 space-y-3">
+              <h3 className="text-sm font-bold text-red-400 flex items-center gap-2">
+                <Ban className="w-4 h-4" /> Currently Blocked / Excluded Dates ({blockedDatesList.length})
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {blockedDatesList.map(b => (
+                  <div key={b.id} className="bg-red-500/10 border border-red-500/30 px-3.5 py-2 rounded-xl text-xs text-red-300 flex items-center gap-2">
+                    <span><strong>{b.date}</strong> ({b.reason})</span>
+                    <button onClick={() => handleUnblockDate(b.id)} className="text-red-400 hover:text-white ml-2" title="Unblock Date">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* National Parks List */}
           <section className="space-y-4">
@@ -438,7 +487,7 @@ export default function AdminDashboard() {
             </div>
           </section>
 
-          {/* Published Drivers Management View */}
+          {/* Published Drivers */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <UserCheck className="w-5 h-5 text-orange-500" /> Active Drivers ({driversList.length})
@@ -455,30 +504,6 @@ export default function AdminDashboard() {
                       <h4 className="font-bold text-white text-sm">{d.name}</h4>
                       <p className="text-zinc-400">{d.experience_years} Years Experience</p>
                       <p className="text-orange-400 flex items-center gap-1 font-bold"><Star className="w-3 h-3 fill-orange-400" /> {d.rating} Rating</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Published Packages */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Package className="w-5 h-5 text-orange-500" /> Tour Packages ({packagesList.length})
-            </h2>
-
-            {packagesList.length === 0 ? (
-              <p className="text-xs text-zinc-500 italic bg-zinc-950 p-6 rounded-2xl border border-white/5 text-center">No custom packages published yet. Click &quot;+ Add Package&quot; to publish one.</p>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-4">
-                {packagesList.map((p) => (
-                  <div key={p.id} className="bg-zinc-950 border border-white/10 rounded-2xl p-4 flex gap-4 text-xs">
-                    <img src={p.image_url} alt={p.title} className="w-24 h-24 object-cover rounded-xl" />
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-orange-400 font-bold uppercase">{p.park_name || "Bandhavgarh"}</span>
-                      <h4 className="font-bold text-white text-sm">{p.title}</h4>
-                      <p className="text-orange-400 font-extrabold">₹{p.price_inr?.toLocaleString("en-IN")} • {p.duration}</p>
                     </div>
                   </div>
                 ))}
@@ -535,6 +560,38 @@ export default function AdminDashboard() {
           </section>
         </div>
       )}
+
+      {/* Block Date Modal */}
+      <AnimatePresence>
+        {isBlockDateModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-zinc-950 border border-red-500/30 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-lg font-bold text-red-400 flex items-center gap-2">
+                  <Ban className="w-5 h-5" /> Block / Exclude Safari Date
+                </h3>
+                <button onClick={() => setIsBlockDateModalOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleBlockDateSubmit} className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-zinc-400 mb-1">Date to Block</label>
+                  <input type="date" required value={blockForm.date} onChange={(e) => setBlockForm({...blockForm, date: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <div>
+                  <label className="block text-zinc-400 mb-1">Reason for Exclusion</label>
+                  <input type="text" placeholder="e.g. Park Maintenance / Holiday / Private Group" required value={blockForm.reason} onChange={(e) => setBlockForm({...blockForm, reason: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
+                </div>
+
+                <button type="submit" className="w-full bg-red-500 text-white font-extrabold py-3.5 rounded-xl text-sm hover:bg-red-600 transition-all">
+                  Exclude Date from Booking Dropdown
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Add National Park Modal */}
       <AnimatePresence>
@@ -602,7 +659,7 @@ export default function AdminDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Add Driver Modal with File Upload */}
+      {/* Add Driver Modal */}
       <AnimatePresence>
         {isDriverModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
@@ -622,7 +679,6 @@ export default function AdminDashboard() {
                   <input type="number" step="0.1" max="5.0" placeholder="Rating" required value={driverForm.rating} onChange={(e) => setDriverForm({...driverForm, rating: Number(e.target.value)})} className="w-full bg-black border border-white/10 rounded-xl p-3 text-white" />
                 </div>
 
-                {/* Driver Photo File Uploader */}
                 <div className="border border-dashed border-white/20 p-4 rounded-xl text-center space-y-2">
                   <Upload className="w-6 h-6 text-orange-500 mx-auto" />
                   <p className="text-zinc-300 font-semibold">Upload Driver Photo</p>

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { submitBooking } from "../../lib/api";
+import { submitBooking, fetchFromAPI } from "../../lib/api";
 import { auth, onAuthStateChanged } from "../../lib/firebase";
 import { 
-  Calendar, CheckCircle2, MessageSquare, Phone, CreditCard, ShieldCheck, 
-  Users, Upload, FileText, Globe, User
+  Calendar as CalendarIcon, CheckCircle2, MessageSquare, Phone, CreditCard, ShieldCheck, 
+  Users, Upload, Globe, User, MapPin, Info, AlertTriangle
 } from "lucide-react";
 
 declare global {
@@ -15,29 +15,46 @@ declare global {
   }
 }
 
-export default function BookingWizard({ packages = [], cars = [], availability = [] }: any) {
+export default function BookingWizard({ packages = [], cars = [] }: any) {
   const [step, setStep] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [parks, setParks] = useState<any[]>([]);
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  const [selectedParkName, setSelectedParkName] = useState<string>("Bandhavgarh National Park");
 
   const [formData, setFormData] = useState({
-    package_id: packages[0]?.id || 1,
-    car_id: cars[0]?.id || 1,
-    booking_date: availability[0]?.date || "",
+    park_name: "Bandhavgarh National Park",
+    package_id: packages[0]?.id || "",
+    car_id: cars[0]?.id || "",
+    booking_date: new Date().toISOString().split("T")[0],
     customer_name: "",
     customer_email: "",
     customer_phone: "",
     guests_count: 2,
-    nationality: "Indian", // "Indian" or "Non-Indian"
-    id_proof_type: "Aadhaar Card", // "Aadhaar Card" or "Passport"
+    nationality: "Indian",
+    id_proof_type: "Aadhaar Card",
     id_proof_base64: "",
-    payment_type: "Advance Paid", // "Advance Paid" or "Full Price Saved"
+    payment_type: "Advance Paid",
   });
 
   const [submitted, setSubmitted] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
-  // Auto-fill customer details from signed-in Firebase user
+  useEffect(() => {
+    async function loadInitialData() {
+      const [pkData, bdData] = await Promise.all([
+        fetchFromAPI("/parks"),
+        fetchFromAPI("/blocked_dates"),
+      ]);
+      setParks(pkData || []);
+      if (Array.isArray(bdData)) {
+        setBlockedDates(bdData.map((b: any) => b.date));
+      }
+    }
+    loadInitialData();
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -62,13 +79,39 @@ export default function BookingWizard({ packages = [], cars = [], availability =
     }
   }, []);
 
-  const selectedPkg = packages.find((p: any) => p.id === formData.package_id) || { title: "Bandhavgarh Safari", price_inr: 28500 };
+  // Filter packages by selected National Park
+  const filteredPackages = packages.filter((p: any) => !p.park_name || p.park_name === selectedParkName);
+  const selectedPkg = filteredPackages.find((p: any) => p.id === formData.package_id) || filteredPackages[0] || { title: "National Park Safari", price_inr: 28500 };
   const selectedCar = cars.find((c: any) => c.id === formData.car_id)?.name || "Safari Jeep";
 
-  const advanceAmount = Math.round(selectedPkg.price_inr * 0.25);
-  const payableAmount = formData.payment_type === "Advance Paid" ? advanceAmount : selectedPkg.price_inr;
+  const advanceAmount = Math.round((selectedPkg.price_inr || 28500) * 0.25);
+  const payableAmount = formData.payment_type === "Advance Paid" ? advanceAmount : (selectedPkg.price_inr || 28500);
 
-  // Handle ID Proof File Upload (Aadhaar or Passport)
+  // Generate 365 Days Available Scrollable Array (Excludes Blocked Dates)
+  const get365AvailableDates = () => {
+    const list = [];
+    const today = new Date();
+
+    for (let i = 0; i < 365; i++) {
+      const d = new Date();
+      d.setDate(today.getDate() + i);
+      const dateStr = d.toISOString().split("T")[0];
+
+      if (!blockedDates.includes(dateStr)) {
+        const formattedLabel = d.toLocaleDateString("en-IN", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          year: "numeric"
+        });
+        list.push({ dateStr, formattedLabel });
+      }
+    }
+    return list;
+  };
+
+  const availableDatesList = get365AvailableDates();
+
   const handleIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -103,6 +146,7 @@ export default function BookingWizard({ packages = [], cars = [], availability =
         handler: async function (response: any) {
           await submitBooking({
             ...formData,
+            park_name: selectedParkName,
             package_title: selectedPkg.title,
             car_name: selectedCar,
             payment_status: formData.payment_type,
@@ -128,6 +172,7 @@ export default function BookingWizard({ packages = [], cars = [], availability =
       } else {
         await submitBooking({
           ...formData,
+          park_name: selectedParkName,
           package_title: selectedPkg.title,
           car_name: selectedCar,
           payment_status: formData.payment_type,
@@ -146,6 +191,7 @@ export default function BookingWizard({ packages = [], cars = [], availability =
 
   const whatsappText = encodeURIComponent(
     `*NEW PREPAID SAFARI BOOKING*\n\n` +
+    `*Park:* ${selectedParkName}\n` +
     `*Guest:* ${formData.customer_name}\n` +
     `*Phone:* ${formData.customer_phone}\n` +
     `*Travelers:* ${formData.guests_count} Persons\n` +
@@ -162,12 +208,12 @@ export default function BookingWizard({ packages = [], cars = [], availability =
     <section id="booking" className="py-12 bg-black text-white">
       <div className="max-w-3xl mx-auto bg-zinc-950 border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl backdrop-blur-md">
         <h2 className="text-3xl font-extrabold text-center text-white mb-2">Prepaid Safari Booking</h2>
-        <p className="text-zinc-400 text-center text-sm mb-8">Official Bandhavgarh permits reserved strictly upon ID verification & prepayment</p>
+        <p className="text-zinc-400 text-center text-sm mb-8">Official park permits reserved strictly upon ID verification & prepayment</p>
 
         <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4 text-xs font-semibold uppercase tracking-wider">
-          <span className={step >= 1 ? "text-orange-500 font-bold" : "text-zinc-600"}>1. Package & Guests</span>
-          <span className={step >= 2 ? "text-orange-500 font-bold" : "text-zinc-600"}>2. Date & Payment</span>
-          <span className={step >= 3 ? "text-orange-500 font-bold" : "text-zinc-600"}>3. ID Proof & Contact</span>
+          <span className={step >= 1 ? "text-orange-500 font-bold" : "text-zinc-600"}>1. Park & Vehicle</span>
+          <span className={step >= 2 ? "text-orange-500 font-bold" : "text-zinc-600"}>2. Date Dropdown</span>
+          <span className={step >= 3 ? "text-orange-500 font-bold" : "text-zinc-600"}>3. ID Proof & Pay</span>
         </div>
 
         {submitted ? (
@@ -176,7 +222,7 @@ export default function BookingWizard({ packages = [], cars = [], availability =
             <div className="space-y-2">
               <h3 className="text-2xl font-bold text-white">Booking Confirmed & Paid!</h3>
               <p className="text-zinc-400 text-sm max-w-md mx-auto">
-                Guest: <strong>{formData.customer_name}</strong> ({formData.guests_count} Travelers)
+                Park: <strong>{selectedParkName}</strong> | Guest: <strong>{formData.customer_name}</strong>
               </p>
               <p className="text-emerald-400 font-bold text-sm">
                 Status: {formData.payment_type} (₹{payableAmount.toLocaleString("en-IN")})
@@ -205,19 +251,40 @@ export default function BookingWizard({ packages = [], cars = [], availability =
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div key="step1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
+                  {/* Select National Park */}
                   <div>
-                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Tour Package</label>
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-orange-500" /> Select National Park
+                    </label>
+                    <select
+                      value={selectedParkName}
+                      onChange={(e) => {
+                        setSelectedParkName(e.target.value);
+                        setFormData({ ...formData, park_name: e.target.value });
+                      }}
+                      className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm font-bold"
+                    >
+                      {parks.map((park: any) => (
+                        <option key={park.id} value={park.name} className="bg-zinc-900">{park.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Choose Package */}
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Tour Package ({selectedParkName})</label>
                     <select
                       value={formData.package_id}
                       onChange={(e) => setFormData({ ...formData, package_id: e.target.value })}
                       className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
                     >
-                      {packages.map((pkg: any) => (
+                      {filteredPackages.map((pkg: any) => (
                         <option key={pkg.id} value={pkg.id} className="bg-zinc-900">{pkg.title} — ₹{pkg.price_inr?.toLocaleString("en-IN")}</option>
                       ))}
                     </select>
                   </div>
 
+                  {/* Choose Vehicle */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Transfer Vehicle</label>
                     <select
@@ -229,9 +296,12 @@ export default function BookingWizard({ packages = [], cars = [], availability =
                         <option key={car.id} value={car.id} className="bg-zinc-900">{car.name} ({car.category})</option>
                       ))}
                     </select>
+                    <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1 font-medium">
+                      <Info className="w-3.5 h-3.5" /> * Vehicle models shown in fleet are representative
+                    </p>
                   </div>
 
-                  {/* Guest Count Selector */}
+                  {/* Travelers Count */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-orange-500" /> Number of Travelers (Persons)
@@ -248,32 +318,30 @@ export default function BookingWizard({ packages = [], cars = [], availability =
                   </div>
 
                   <button type="button" onClick={() => setStep(2)} className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl transition-all text-sm hover:bg-orange-400">
-                    Next: Date & Payment Option &rarr;
+                    Next: Date Dropdown & Prepayment &rarr;
                   </button>
                 </motion.div>
               )}
 
               {step === 2 && (
                 <motion.div key="step2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Select Available Date</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {availability.map((item: any) => (
-                        <button
-                          type="button"
-                          key={item.id}
-                          onClick={() => setFormData({ ...formData, booking_date: item.date })}
-                          className={`p-3 rounded-xl border text-center transition-all text-xs font-medium ${
-                            formData.booking_date === item.date
-                              ? "bg-orange-500 text-black font-bold border-orange-500 shadow-md"
-                              : "bg-black border-white/10 hover:border-white/30 text-zinc-300"
-                          }`}
-                        >
-                          <Calendar className="w-4 h-4 mx-auto mb-1" />
-                          {item.date}
-                        </button>
+                  {/* Scrollable 365-Day Select Dropdown */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <CalendarIcon className="w-4 h-4 text-orange-500" /> Choose Available Date (Scrollable 365 Days)
+                    </label>
+                    <select
+                      value={formData.booking_date}
+                      onChange={(e) => setFormData({ ...formData, booking_date: e.target.value })}
+                      className="w-full bg-black border border-orange-500/50 rounded-xl p-4 text-orange-400 font-extrabold text-sm focus:outline-none focus:border-orange-500 cursor-pointer shadow-lg"
+                    >
+                      {availableDatesList.map((item) => (
+                        <option key={item.dateStr} value={item.dateStr} className="bg-zinc-900 text-white font-medium py-2">
+                          {item.formattedLabel}
+                        </option>
                       ))}
-                    </div>
+                    </select>
+                    <p className="text-[10px] text-zinc-500">Dates blocked by Dinesh Pandey for park maintenance or holidays are automatically excluded.</p>
                   </div>
 
                   <div className="pt-2 border-t border-white/10 space-y-3">
@@ -302,7 +370,7 @@ export default function BookingWizard({ packages = [], cars = [], availability =
                         }`}
                       >
                         <p className="font-bold text-sm text-white">100% Full Payment</p>
-                        <p className="text-xs text-orange-400 font-extrabold mt-1">₹{selectedPkg.price_inr?.toLocaleString("en-IN")}</p>
+                        <p className="text-xs text-orange-400 font-extrabold mt-1">₹{(selectedPkg.price_inr || 28500).toLocaleString("en-IN")}</p>
                       </button>
                     </div>
                   </div>
@@ -349,7 +417,6 @@ export default function BookingWizard({ packages = [], cars = [], availability =
                     className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
                   />
 
-                  {/* Nationality & Aadhaar / Passport Upload */}
                   <div className="pt-2 border-t border-white/10 space-y-3">
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nationality & Forest Permit ID Proof</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -383,7 +450,7 @@ export default function BookingWizard({ packages = [], cars = [], availability =
                       <p className="text-zinc-300 text-xs font-semibold">
                         Upload {formData.nationality === "Indian" ? "Aadhaar Card" : "Passport"} Copy
                       </p>
-                      <p className="text-[10px] text-zinc-500">Required by Madhya Pradesh Forest Department for Bandhavgarh Gate Entry</p>
+                      <p className="text-[10px] text-zinc-500">Required by Forest Department for Gate Entry Permits</p>
                       <input 
                         type="file" 
                         accept="image/*,.pdf" 
@@ -396,7 +463,7 @@ export default function BookingWizard({ packages = [], cars = [], availability =
 
                   <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-xl text-xs space-y-1">
                     <p className="font-bold text-white flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-orange-500" /> Payment Summary</p>
-                    <p className="text-zinc-300">Package: {selectedPkg.title} ({formData.guests_count} Travelers)</p>
+                    <p className="text-zinc-300">Park: {selectedParkName} | Package: {selectedPkg.title}</p>
                     <p className="text-orange-400 font-bold">Payable Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
                   </div>
 

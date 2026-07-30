@@ -3,6 +3,7 @@ import {
   collection, 
   getDocs, 
   addDoc, 
+  deleteDoc,
   doc, 
   setDoc, 
   serverTimestamp 
@@ -15,7 +16,7 @@ const SEED_DATA = {
     role: "Founder & Premier Tour Operator",
     headquarter: "Bandhavgarh National Park, MP",
     bio: "Dinesh Pandey (+91 9425331205) is the proud business owner of Pandey Tiger Safaris across Madhya Pradesh's tiger reserves. Dinesh provides end-to-end tour and travel management—offering complete safari packages, luxury vehicle fleets (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed forest guides and tiger trackers on demand.",
-    image_url: "/gallery/owner-1.jpg"
+    image_url: "/dinesh-pandey.jpg"
   },
   parks: [
     { id: "park_1", name: "Bandhavgarh National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800" },
@@ -91,19 +92,10 @@ const SEED_DATA = {
       description: "Trek the ancient fort combined with morning and evening jungle tiger tracking.",
       highlights: "6 Safaris, Ancient Fort Trek, Dedicated Fleet Support",
       image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: "pkg_3",
-      park_name: "Kanha National Park",
-      title: "Kanha Tiger & Barasingha Circuit",
-      duration: "3 Days / 2 Nights",
-      price_inr: 31000,
-      description: "Explore Mukki and Khatia zones for royal Bengal tigers and hard-ground barasingha.",
-      highlights: " Mukki & Khatia Safaris, Resort Accommodation",
-      image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800"
     }
   ],
   drivers: [],
+  blocked_dates: [],
   reviews: [
     { id: "rev_1", author: "Ananya Sharma", location: "Delhi, India", rating: 5, comment: "Dinesh Pandey (+91 9425331205) organized our entire package and provided the best forest guide. Top service!" },
     { id: "rev_2", author: "Suresh Kothari", location: "Mumbai, India", rating: 5, comment: "Booked an Innova Crysta and complete tour with Dinesh Ji. Everything was seamless!" }
@@ -144,18 +136,12 @@ export async function fetchFromAPI(endpoint: string) {
       return getCollectionData("cars", SEED_DATA.cars);
     case "/drivers":
       return getCollectionData("drivers", SEED_DATA.drivers);
+    case "/blocked_dates":
+      return getCollectionData("blocked_dates", SEED_DATA.blocked_dates);
     case "/reviews":
       return getCollectionData("reviews", SEED_DATA.reviews);
     case "/contact":
       return getCollectionData("contact", SEED_DATA.contact);
-    case "/availability":
-      // Generate 365 days (1 Year) availability array starting from today
-      const dates = Array.from({ length: 365 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() + i);
-        return { id: `date_${i}`, date: d.toISOString().split("T")[0], is_available: true };
-      });
-      return dates;
     default:
       return null;
   }
@@ -176,6 +162,27 @@ export async function submitBooking(payload: any) {
   }
 }
 
+export async function blockBookingDate(payload: { date: string; reason: string }) {
+  try {
+    const docRef = await addDoc(collection(db, "blocked_dates"), {
+      ...payload,
+      createdAt: serverTimestamp(),
+    });
+    return { status: "success", id: docRef.id };
+  } catch (error: any) {
+    return { status: "error", message: error.message };
+  }
+}
+
+export async function unblockBookingDate(id: string) {
+  try {
+    await deleteDoc(doc(db, "blocked_dates", id));
+    return { status: "success" };
+  } catch (error: any) {
+    return { status: "error", message: error.message };
+  }
+}
+
 export async function addTourPackage(payload: any) {
   try {
     const docRef = await addDoc(collection(db, "packages"), {
@@ -184,7 +191,6 @@ export async function addTourPackage(payload: any) {
     });
     return { status: "success", package_id: docRef.id };
   } catch (error: any) {
-    console.error("Error adding package:", error);
     return { status: "error", message: error.message };
   }
 }
@@ -197,7 +203,6 @@ export async function addNationalPark(payload: any) {
     });
     return { status: "success", park_id: docRef.id };
   } catch (error: any) {
-    console.error("Error adding park:", error);
     return { status: "error", message: error.message };
   }
 }
@@ -210,7 +215,6 @@ export async function addDriver(payload: any) {
     });
     return { status: "success", driver_id: docRef.id };
   } catch (error: any) {
-    console.error("Error adding driver:", error);
     return { status: "error", message: error.message };
   }
 }
@@ -224,7 +228,6 @@ export async function submitCustomPackage(payload: any) {
     });
     return { status: "success", request_id: docRef.id };
   } catch (error: any) {
-    console.error("Custom package error:", error);
     return { status: "error", message: error.message };
   }
 }
