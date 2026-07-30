@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, MapPin, Maximize2, X, Compass } from "lucide-react";
 import { triggerHaptic } from "../../lib/sound";
 
-// Isolated Portal Component to guarantee top-level document.body mounting
 function Portal({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
@@ -162,31 +161,27 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* Isolated Body Portal Modal: Guarantees 100% Dead-Center Alignment for Every Card */}
+      {/* Dead-Center Grid Portal Modal */}
       <Portal>
         <AnimatePresence>
           {activeLightBox && (
-            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+            <div className="fixed inset-0 z-[99999] grid place-items-center p-4 overflow-y-auto bg-black/90 backdrop-blur-xl">
+              {/* Backdrop Click Dismiss */}
+              <div 
                 onClick={() => {
                   triggerHaptic(10);
                   setActiveLightBox(null);
                 }}
-                className="fixed inset-0 bg-black/90 backdrop-blur-2xl"
+                className="fixed inset-0 z-0"
               />
 
-              {/* Dead-Center Viewport Card */}
+              {/* Compact Dead-Center Modal Card */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="relative z-[100000] w-full max-w-2xl max-h-[85vh] bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="relative z-10 w-full max-w-xl bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl my-auto"
               >
                 {/* Close Button */}
                 <button
@@ -200,7 +195,7 @@ export default function TigerGallery() {
                 </button>
 
                 {/* Compact Image */}
-                <div className="relative h-56 sm:h-72 md:h-80 w-full bg-black overflow-hidden flex-shrink-0">
+                <div className="relative h-48 sm:h-56 md:h-64 w-full bg-black overflow-hidden flex-shrink-0">
                   <img
                     src={activeLightBox.image_url}
                     alt={activeLightBox.title}
@@ -210,7 +205,7 @@ export default function TigerGallery() {
                 </div>
 
                 {/* Content Box */}
-                <div className="p-5 md:p-6 space-y-3.5 bg-zinc-950 text-white z-20">
+                <div className="p-5 md:p-6 space-y-3.5 bg-zinc-950 text-white">
                   <div className="flex flex-wrap justify-between items-center gap-2">
                     <span className="text-[10px] uppercase font-extrabold text-black bg-orange-500 px-2.5 py-0.5 rounded-full tracking-wider">
                       {activeLightBox.park} Sanctuary
@@ -226,7 +221,7 @@ export default function TigerGallery() {
                     {activeLightBox.caption}
                   </p>
 
-                  <div className="pt-1">
+                  <div className="pt-2">
                     <Link
                       href={`/booking?park=${encodeURIComponent(
                         activeLightBox.park.includes("National Park") 
