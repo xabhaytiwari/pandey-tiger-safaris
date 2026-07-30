@@ -9,6 +9,7 @@ import GallerySlideshow from "../components/ui/GallerySlideshow";
 import ReviewMarquee from "../components/ui/ReviewMarquee";
 import LiveSightingTicker from "../components/ui/LiveSightingTicker";
 import ZoneGuide from "../components/sections/ZoneGuide";
+import AnimatedCounter from "../components/ui/AnimatedCounter";
 import { fetchFromAPI } from "../lib/api";
 import { Compass, Sparkles, ArrowRight, Car, Users, Zap } from "lucide-react";
 
@@ -53,13 +54,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-black text-white overflow-x-hidden">
-      {/* Live Jungle Sightings Ticker Bar */}
       <LiveSightingTicker />
 
       {/* Hero Section */}
       <section className="relative w-screen left-1/2 right-1/2 -mx-[50vw] pt-28 pb-20 md:pt-36 md:pb-28 flex flex-col items-center text-center overflow-hidden min-h-[85vh] justify-center">
         
-        {/* Full-Bleed Background Carousel */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.img
@@ -114,39 +113,36 @@ export default function Home() {
             </motion.div>
           </motion.div>
 
+          {/* Animated Counter Stats */}
           <motion.div variants={itemVariants} className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto border-t border-white/10 text-center">
             <div>
-              <p className="text-3xl font-black text-orange-500">20+</p>
-              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Years Experience</p>
+              <p className="text-orange-500"><AnimatedCounter value={20} suffix="+" /></p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">Years Experience</p>
             </div>
             <div>
-              <p className="text-3xl font-black text-white">5 Reserves</p>
-              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">MP Tiger Parks</p>
+              <p className="text-white"><AnimatedCounter value={5} suffix=" Reserves" /></p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">MP Tiger Parks</p>
             </div>
             <div>
               <p className="text-3xl font-black text-orange-500">Fleet</p>
-              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Innova / Traveller</p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">Innova / Traveller</p>
             </div>
             <div>
               <p className="text-3xl font-black text-white">Guides</p>
-              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Army of Experts</p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">Army of Experts</p>
             </div>
           </motion.div>
         </motion.div>
       </section>
 
-      {/* Bandhavgarh Safari Zone Guide */}
       <ZoneGuide />
 
-      {/* Royal Bengal Tiger Photography Showcase */}
       <div className="max-w-6xl mx-auto px-4">
         <TigerGallery />
       </div>
 
-      {/* Guest Testimonials Marquee */}
       <ReviewMarquee reviews={reviews} />
 
-      {/* Real Owner & Fleet Slideshow */}
       <div className="max-w-6xl mx-auto py-12 px-4">
         <GallerySlideshow />
       </div>
