@@ -1,10 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, MapPin, Maximize2, X, Compass } from "lucide-react";
 import { triggerHaptic } from "../../lib/sound";
+
+// Isolated Portal Component to guarantee top-level document.body mounting
+function Portal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || typeof document === "undefined") return null;
+  return createPortal(children, document.body);
+}
 
 export default function TigerGallery() {
   const tigerPhotos = [
@@ -62,15 +75,15 @@ export default function TigerGallery() {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [activeLightBox, setActiveLightBox] = useState<any>(null);
 
-  // Lock background scroll when modal is active
+  // Lock body scroll when modal is active
   useEffect(() => {
     if (activeLightBox) {
       document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     };
   }, [activeLightBox]);
 
@@ -149,30 +162,31 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* Flawless Centered Dialog Pattern */}
-      <AnimatePresence>
-        {activeLightBox && (
-          <div className="fixed inset-0 z-[200] overflow-y-auto">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                triggerHaptic(10);
-                setActiveLightBox(null);
-              }}
-              className="fixed inset-0 bg-black/85 backdrop-blur-xl"
-            />
-
-            {/* Centering Flex Wrapper */}
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
+      {/* Isolated Body Portal Modal: Guarantees 100% Dead-Center Alignment for Every Card */}
+      <Portal>
+        <AnimatePresence>
+          {activeLightBox && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+              {/* Backdrop */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => {
+                  triggerHaptic(10);
+                  setActiveLightBox(null);
+                }}
+                className="fixed inset-0 bg-black/90 backdrop-blur-2xl"
+              />
+
+              {/* Dead-Center Viewport Card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-zinc-950 border border-white/15 text-left align-middle shadow-2xl my-8"
+                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="relative z-[100000] w-full max-w-2xl max-h-[85vh] bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between"
               >
                 {/* Close Button */}
                 <button
@@ -186,17 +200,17 @@ export default function TigerGallery() {
                 </button>
 
                 {/* Compact Image */}
-                <div className="relative h-60 sm:h-72 md:h-80 w-full bg-black overflow-hidden">
+                <div className="relative h-56 sm:h-72 md:h-80 w-full bg-black overflow-hidden flex-shrink-0">
                   <img
                     src={activeLightBox.image_url}
                     alt={activeLightBox.title}
                     className="w-full h-full object-cover object-center"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
                 </div>
 
                 {/* Content Box */}
-                <div className="p-6 space-y-4 bg-zinc-950 text-white">
+                <div className="p-5 md:p-6 space-y-3.5 bg-zinc-950 text-white z-20">
                   <div className="flex flex-wrap justify-between items-center gap-2">
                     <span className="text-[10px] uppercase font-extrabold text-black bg-orange-500 px-2.5 py-0.5 rounded-full tracking-wider">
                       {activeLightBox.park} Sanctuary
@@ -208,11 +222,11 @@ export default function TigerGallery() {
                     {activeLightBox.title}
                   </h3>
                   
-                  <p className="text-xs md:text-sm text-zinc-400 font-light leading-relaxed">
+                  <p className="text-xs md:text-sm text-zinc-400 font-light line-clamp-2 leading-relaxed">
                     {activeLightBox.caption}
                   </p>
 
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <Link
                       href={`/booking?park=${encodeURIComponent(
                         activeLightBox.park.includes("National Park") 
@@ -231,9 +245,9 @@ export default function TigerGallery() {
                 </div>
               </motion.div>
             </div>
-          </div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </Portal>
     </section>
   );
 }
