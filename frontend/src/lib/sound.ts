@@ -65,7 +65,7 @@ export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
     }
   }
 
-  // 2. Singleton Web Audio API Tactile Pop
+  // 2. Singleton Web Audio API Tactile Pop (Works on iPhones & Android)
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -90,3 +90,21 @@ export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
     // Ignore
   }
 };
+
+// Global Capture-Phase Event Delegator: Triggers Haptic Feedback on EVERY button, link, or input across the entire app
+if (typeof window !== "undefined") {
+  const handleGlobalClick = (e: Event) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    const interactive = target.closest(
+      "button, a, select, option, input[type='button'], input[type='submit'], input[type='checkbox'], [role='button'], [data-haptic]"
+    );
+
+    if (interactive) {
+      triggerHaptic("light");
+    }
+  };
+
+  window.addEventListener("click", handleGlobalClick, { capture: true });
+}
