@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Compass, Sparkles, Shield, Phone, ArrowRight, Car, MapPin } from "lucide-react";
+import { Compass, Sparkles, Shield, ArrowRight, Car, Users } from "lucide-react";
 
 export default function Home() {
   return (
@@ -13,7 +13,7 @@ export default function Home() {
       <section className="relative max-w-6xl mx-auto py-20 md:py-32 flex flex-col items-center text-center overflow-hidden">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="space-y-6 max-w-4xl">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-amber-400 text-xs font-semibold backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5" /> Founder Guided • Dinesh Pandey (+91 9425331205)
+            <Sparkles className="w-3.5 h-3.5" /> Business Owner • Dinesh Pandey (+91 9425331205)
           </div>
 
           <h1 className="text-5xl md:text-8xl font-extrabold tracking-tight text-balance leading-none">
@@ -24,7 +24,7 @@ export default function Home() {
           </h1>
 
           <p className="text-zinc-400 text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed">
-            Experience royal Bengal tiger tracking in Bandhavgarh National Park with custom Innova Crysta, Force Traveller, Swift Dzire & open 4x4 Gypsies.
+            Spearheaded by business owner Dinesh Pandey (+91 9425331205). Complete tour packages, luxury transport (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed safari guides on demand.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
@@ -46,8 +46,8 @@ export default function Home() {
           <Link href="/packages" className="group md:col-span-2 bg-zinc-900/40 border border-white/10 rounded-3xl p-8 hover:border-amber-500/40 transition-all relative overflow-hidden backdrop-blur-md flex flex-col justify-between min-h-[300px]">
             <div className="space-y-3 z-10">
               <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Featured Packages</span>
-              <h3 className="text-3xl font-bold text-white group-hover:text-amber-400 transition-colors">Bandhavgarh Tiger Expeditions</h3>
-              <p className="text-zinc-400 text-sm max-w-md">3-Day & 4-Day complete itineraries including 4x4 open safari permits, resort stays, and luxury pickup transfers in INR (₹).</p>
+              <h3 className="text-3xl font-bold text-white group-hover:text-amber-400 transition-colors">Bandhavgarh Tour Packages</h3>
+              <p className="text-zinc-400 text-sm max-w-md">3-Day & 4-Day complete travel packages including 4x4 open safari permits, resort stays, and luxury pickup transfers priced in INR (₹).</p>
             </div>
             <div className="z-10 flex items-center gap-2 text-xs font-bold text-amber-400 pt-4">
               Explore All Packages <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -61,7 +61,7 @@ export default function Home() {
           <Link href="/fleet" className="group bg-zinc-900/40 border border-white/10 rounded-3xl p-8 hover:border-amber-500/40 transition-all relative overflow-hidden backdrop-blur-md flex flex-col justify-between min-h-[300px]">
             <div className="space-y-3 z-10">
               <Car className="w-8 h-8 text-amber-400" />
-              <h3 className="text-2xl font-bold text-white">Luxury Vehicle Fleet</h3>
+              <h3 className="text-2xl font-bold text-white">Luxury Fleet</h3>
               <p className="text-zinc-400 text-xs">Innova Crysta, Force Traveller, Swift Dzire & Open 4x4 Gypsies.</p>
             </div>
             <div className="z-10 text-xs font-bold text-amber-400 flex items-center gap-1 pt-4">
@@ -72,12 +72,12 @@ export default function Home() {
           {/* Bento Card 3: About Founder */}
           <Link href="/about" className="group bg-zinc-900/40 border border-white/10 rounded-3xl p-8 hover:border-amber-500/40 transition-all relative overflow-hidden backdrop-blur-md flex flex-col justify-between min-h-[280px]">
             <div className="space-y-3 z-10">
-              <Shield className="w-8 h-8 text-amber-400" />
-              <h3 className="text-2xl font-bold text-white">Dinesh Pandey</h3>
-              <p className="text-zinc-400 text-xs">20+ years guiding in Bandhavgarh. Personal calls at +91 9425331205.</p>
+              <Users className="w-8 h-8 text-amber-400" />
+              <h3 className="text-2xl font-bold text-white">Owner: Dinesh Pandey</h3>
+              <p className="text-zinc-400 text-xs">Providing full tours, travels & an army of top forest guides. Call +91 9425331205.</p>
             </div>
             <div className="z-10 text-xs font-bold text-amber-400 flex items-center gap-1 pt-4">
-              Founder Profile <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              About Dinesh Pandey <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
 
@@ -85,8 +85,8 @@ export default function Home() {
           <Link href="/custom-package" className="group md:col-span-2 bg-gradient-to-r from-zinc-900/80 to-zinc-950 border border-amber-500/30 rounded-3xl p-8 hover:border-amber-500/60 transition-all relative overflow-hidden backdrop-blur-md flex flex-col justify-between min-h-[280px]">
             <div className="space-y-3 z-10">
               <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Personalized Requests</span>
-              <h3 className="text-3xl font-bold text-white">Bespoke Safari Requests</h3>
-              <p className="text-zinc-400 text-sm max-w-md">Have a specific budget or transport request? Submit custom requirements directly to Dinesh Pandey.</p>
+              <h3 className="text-3xl font-bold text-white">Bespoke Travel Requests</h3>
+              <p className="text-zinc-400 text-sm max-w-md">Have a specific budget or transport request? Submit custom requirements directly to business owner Dinesh Pandey.</p>
             </div>
             <div className="z-10 text-xs font-bold text-amber-400 flex items-center gap-1 pt-4">
               Submit Custom Request <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />

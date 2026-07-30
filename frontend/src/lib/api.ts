@@ -12,10 +12,10 @@ const SEED_DATA = {
   founder: {
     name: "Dinesh Pandey",
     phone: "9425331205",
-    role: "Founder & Chief Wildlife Specialist",
+    role: "Founder & Premier Tour Operator",
     headquarter: "Bandhavgarh National Park, MP",
-    bio: "With over 20 years of royal Bengal tiger tracking experience in Bandhavgarh, Dinesh Pandey (+91 9425331205) provides luxury vehicle transfers, custom safari permits, and guided wildlife photography.",
-    image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800"
+    bio: "Dinesh Pandey (+91 9425331205) is the proud business owner of Pandey Tiger Safaris in Bandhavgarh. Dinesh provides end-to-end tour and travel management—offering complete safari packages, luxury vehicle fleets (Innova Crysta, Force Traveller, Swift Dzire), and an army of Bandhavgarh's finest licensed forest guides and tiger trackers on demand.",
+    image_url: "/dinesh-pandey.jpg"
   },
   packages: [
     {
@@ -23,8 +23,8 @@ const SEED_DATA = {
       title: "Royal Bengal Tiger Expedition",
       duration: "3 Days / 2 Nights",
       price_inr: 28500,
-      description: "4 Open Jeep Safaris in Tala and Magdhi zones led by master trackers.",
-      highlights: "4 Safaris, Resort Stay, Railway Station Pickup",
+      description: "4 Open Jeep Safaris in Tala and Magdhi zones with dedicated licensed guides and resort stays.",
+      highlights: "4 Safaris, Resort Stay, Railway Station Pickup, Expert Guides",
       image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
     },
     {
@@ -32,7 +32,7 @@ const SEED_DATA = {
       title: "Bandhavgarh Fort & Wildlife Trail",
       duration: "4 Days / 3 Nights",
       price_inr: 42000,
-      description: "Trek the ancient fort combined with morning and evening jungle tiger tracking.",
+      description: "Trek the ancient fort combined with morning and evening jungle tiger tracking led by an army of expert guides.",
       highlights: "6 Safaris, Ancient Fort Trek, Dedicated Fleet Support",
       image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800"
     }
@@ -49,8 +49,8 @@ const SEED_DATA = {
     { id: "drv_2", name: "Vikram Verma", experience_years: 8, rating: 4.8, photo_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400" }
   ],
   reviews: [
-    { id: "rev_1", author: "Ananya Sharma", location: "Delhi, India", rating: 5, comment: "Dinesh Pandey (+91 9425331205) arranged our Innova Crysta pickup from Katni. Excellent coordination!" },
-    { id: "rev_2", author: "Suresh Kothari", location: "Mumbai, India", rating: 5, comment: "Booked a Force Traveller for our family. Spotless vehicle and memorable tiger sightings." }
+    { id: "rev_1", author: "Ananya Sharma", location: "Delhi, India", rating: 5, comment: "Dinesh Pandey (+91 9425331205) organized our entire package and provided the best forest guide. Top service!" },
+    { id: "rev_2", author: "Suresh Kothari", location: "Mumbai, India", rating: 5, comment: "Booked a Force Traveller and complete tour with Dinesh Ji. Everything was seamless from station pickup to safari permits." }
   ],
   contact: {
     hq_address: "Tala Gate Road, Near Bandhavgarh National Park, Umaria, MP - 484661",
@@ -60,7 +60,6 @@ const SEED_DATA = {
 };
 
 async function getCollectionData(collectionName: string, fallbackData: any) {
-  // If running on server during build time (SSR), return fallback immediately
   if (typeof window === "undefined") {
     return fallbackData;
   }

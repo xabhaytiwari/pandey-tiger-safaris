@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="space-y-3">
           <h4 className="text-white font-bold text-sm">Pandey Tiger Safaris</h4>
           <p className="text-zinc-500 leading-relaxed">
-            Authentic royal Bengal tiger tracking in Bandhavgarh National Park guided directly by Dinesh Pandey.
+            Premier tour and travel management in Bandhavgarh National Park operated by business owner Dinesh Pandey. Complete packages, luxury vehicle fleet, and an army of expert licensed guides.
           </p>
         </div>
 
@@ -23,10 +23,11 @@ export default function Footer() {
         </div>
 
         <div>
-          <h5 className="text-white font-semibold mb-3">About Founder</h5>
+          <h5 className="text-white font-semibold mb-3">Business Owner</h5>
           <ul className="space-y-2">
             <li><Link href="/about" className="hover:text-white">Dinesh Pandey Profile</Link></li>
             <li><Link href="/contact" className="hover:text-white">Bandhavgarh HQ</Link></li>
+            <li><Link href="/admin" className="hover:text-white">Owner Dashboard</Link></li>
           </ul>
         </div>
 
@@ -45,7 +46,7 @@ export default function Footer() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 mt-12 pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-zinc-600">
-        <p>© {new Date().getFullYear()} Pandey Tiger Safaris. Designed with Apple Minimalism.</p>
+        <p>© {new Date().getFullYear()} Pandey Tiger Safaris. All rights reserved.</p>
         <p>Headquarters: Tala Gate, Bandhavgarh, MP, India</p>
       </div>
     </footer>
