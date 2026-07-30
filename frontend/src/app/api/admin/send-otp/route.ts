@@ -1,12 +1,31 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
+
+// Timing-safe comparison to prevent timing attacks
+function timingSafeCheck(a: string, b: string) {
+  try {
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(req: Request) {
   try {
     const { username, password } = await req.json();
 
-    // 1. Strict Credentials Check
-    if (username !== "dinesh_pandey" || password !== "PandeyTiger@2026#") {
-      return NextResponse.json({ success: false, error: "Invalid Admin Username or Password" }, { status: 401 });
+    const expectedUsername = process.env.ADMIN_USERNAME || "dinesh_pandey";
+    const expectedPassword = process.env.ADMIN_PASSWORD || "PandeyTiger@2026#";
+
+    // 1. Server-side timing-safe credentials check
+    const isUsernameValid = timingSafeCheck(username || "", expectedUsername);
+    const isPasswordValid = timingSafeCheck(password || "", expectedPassword);
+
+    if (!isUsernameValid || !isPasswordValid) {
+      return NextResponse.json({ success: false, error: "Invalid Admin Credentials" }, { status: 401 });
     }
 
     const targetEmail = "singhabhaytiwari@gmail.com";
@@ -15,7 +34,7 @@ export async function POST(req: Request) {
     // 2. Generate 6-digit OTP on server
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 3. Send Email via Resend
+    // 3. Send 2FA Email via Resend
     if (apiKey) {
       await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -41,7 +60,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // 4. Return response WITHOUT exposing OTP
+    // 4. Return success response without exposing OTP
     const response = NextResponse.json({
       success: true,
       message: `2FA Verification Code dispatched to ${targetEmail}`,
