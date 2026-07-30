@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import Hero from "../components/sections/Hero";
 import BookingWizard from "../components/booking/BookingWizard";
@@ -7,7 +9,7 @@ import CustomPackage from "../components/sections/CustomPackage";
 import AuthModal from "../components/auth/AuthModal";
 import { fetchFromAPI } from "../lib/api";
 import { auth, onAuthStateChanged, signOut } from "../lib/firebase";
-import { Star, Phone, Car as CarIcon, LogOut } from "lucide-react";
+import { Star, Phone, Car as CarIcon } from "lucide-react";
 
 export default function Home() {
   const [founder, setFounder] = useState<any>(null);

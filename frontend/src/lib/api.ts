@@ -8,7 +8,6 @@ import {
   serverTimestamp 
 } from "firebase/firestore";
 
-// Seed data fallback for Firestore initialization
 const SEED_DATA = {
   founder: {
     name: "Dinesh Pandey",
@@ -47,7 +46,7 @@ const SEED_DATA = {
   ],
   drivers: [
     { id: "drv_1", name: "Ramesh Singh", experience_years: 12, rating: 4.9, photo_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400" },
-    { id: "drv_2", name: "Vikram Verma", experience_years: 8, rating: 4.8, photo_url="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400" }
+    { id: "drv_2", name: "Vikram Verma", experience_years: 8, rating: 4.8, photo_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400" }
   ],
   reviews: [
     { id: "rev_1", author: "Ananya Sharma", location: "Delhi, India", rating: 5, comment: "Dinesh Pandey (+91 9425331205) arranged our Innova Crysta pickup from Katni. Excellent coordination!" },
@@ -60,32 +59,24 @@ const SEED_DATA = {
   }
 };
 
-// Generic Firestore Fetcher with Seeding Fallback
 async function getCollectionData(collectionName: string, fallbackData: any) {
+  // If running on server during build time (SSR), return fallback immediately
+  if (typeof window === "undefined") {
+    return fallbackData;
+  }
+
   try {
     const colRef = collection(db, collectionName);
     const snapshot = await getDocs(colRef);
     if (!snapshot.empty) {
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
-
-    // Auto-seed Firestore if collection is empty
-    if (Array.isArray(fallbackData)) {
-      for (const item of fallbackData) {
-        await setDoc(doc(db, collectionName, item.id || String(Math.random())), item);
-      }
-    } else if (fallbackData) {
-      await setDoc(doc(db, collectionName, "info"), fallbackData);
-      return fallbackData;
-    }
     return fallbackData;
   } catch (error) {
-    console.warn(`Firestore read warning for ${collectionName}, using local fallback:`, error);
     return fallbackData;
   }
 }
 
-// Public Data API Getters
 export async function fetchFromAPI(endpoint: string) {
   switch (endpoint) {
     case "/founder":
@@ -112,7 +103,6 @@ export async function fetchFromAPI(endpoint: string) {
   }
 }
 
-// Create Safari Booking in Firestore
 export async function submitBooking(payload: any) {
   try {
     const docRef = await addDoc(collection(db, "bookings"), {
@@ -127,7 +117,6 @@ export async function submitBooking(payload: any) {
   }
 }
 
-// Create Custom Package Request in Firestore
 export async function submitCustomPackage(payload: any) {
   try {
     const docRef = await addDoc(collection(db, "custom_packages"), {
