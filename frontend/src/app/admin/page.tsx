@@ -6,14 +6,13 @@ import { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Shield, CheckCircle2, LogOut, Calendar, User, Mail, Phone } from "lucide-react";
+import { Shield, CheckCircle2, LogOut, Calendar, User, Mail, Phone, Lock } from "lucide-react";
 
 export default function AdminDashboard() {
   const [authStep, setAuthStep] = useState<"login" | "2fa" | "authenticated">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [inputOtp, setInputOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -47,39 +46,52 @@ export default function AdminDashboard() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    if (username === "dinesh_pandey" && password === "PandeyTiger@2026#") {
-      setLoading(true);
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedOtp(newOtp);
+    try {
+      const res = await fetch("/api/admin/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
 
-      try {
-        await fetch("/api/admin/send-otp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ otp: newOtp }),
-        });
+      if (data.success) {
         setAuthStep("2fa");
-      } catch (err) {
-        setError("Failed to trigger 2FA email");
-      } finally {
-        setLoading(false);
+      } else {
+        setError(data.error || "Authentication failed");
       }
-    } else {
-      setError("Invalid Admin Username or Password");
+    } catch (err) {
+      setError("Failed to trigger 2FA request");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleVerify2FA = (e: React.FormEvent) => {
+  const handleVerify2FA = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    if (inputOtp === generatedOtp) {
-      sessionStorage.setItem("admin_authed", "true");
-      setAuthStep("authenticated");
-      fetchData();
-    } else {
-      setError("Incorrect 2FA Code. Please try again.");
+    try {
+      const res = await fetch("/api/admin/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inputOtp }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        sessionStorage.setItem("admin_authed", "true");
+        setAuthStep("authenticated");
+        fetchData();
+      } else {
+        setError(data.error || "2FA verification failed");
+      }
+    } catch (err) {
+      setError("Verification failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -131,7 +143,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <button type="submit" disabled={loading} className="w-full bg-white text-black font-bold py-3.5 rounded-xl transition-all text-sm hover:bg-zinc-200 disabled:opacity-50">
-                  {loading ? "Authenticating..." : "Sign In to Admin"}
+                  {loading ? "Verifying Credentials..." : "Sign In to Admin"}
                 </button>
               </form>
             )}
@@ -139,12 +151,7 @@ export default function AdminDashboard() {
             {authStep === "2fa" && (
               <form onSubmit={handleVerify2FA} className="space-y-4">
                 <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs text-amber-300">
-                  2FA Code sent to: <strong className="text-white block mt-0.5">singhabhaytiwari@gmail.com</strong>
-                </div>
-
-                {/* Dev Helper Badge (Shows generated code directly) */}
-                <div className="bg-zinc-800/80 border border-white/10 p-3 rounded-xl text-center text-xs text-zinc-300 font-mono">
-                  🔑 2FA Code: <span className="text-amber-400 font-bold tracking-widest text-sm">{generatedOtp}</span>
+                  2FA Verification Code sent to: <strong className="text-white block mt-0.5">singhabhaytiwari@gmail.com</strong>
                 </div>
 
                 <div>
@@ -153,14 +160,14 @@ export default function AdminDashboard() {
                     type="text"
                     required
                     maxLength={6}
-                    placeholder="123456"
+                    placeholder="••••••"
                     value={inputOtp}
                     onChange={(e) => setInputOtp(e.target.value)}
                     className="w-full bg-black/60 border border-amber-500/50 text-amber-400 font-mono tracking-widest text-center text-xl rounded-xl p-3.5 focus:outline-none"
                   />
                 </div>
-                <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-3.5 rounded-xl transition-all text-sm">
-                  Verify 2FA & Unlock Dashboard
+                <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-3.5 rounded-xl transition-all text-sm disabled:opacity-50">
+                  {loading ? "Verifying 2FA..." : "Unlock Owner Dashboard"}
                 </button>
               </form>
             )}
