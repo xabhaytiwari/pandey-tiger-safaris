@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Compass, User, LogOut, Phone, Menu, X, ShieldAlert } from "lucide-react";
+import { User, LogOut, Phone, Menu, X, Ticket } from "lucide-react";
 import { auth, onAuthStateChanged, signOut } from "../../lib/firebase";
 import AuthModal from "../auth/AuthModal";
 
@@ -35,6 +35,7 @@ export default function Navbar() {
     { href: "/booking", label: "Book Safari" },
     { href: "/custom-package", label: "Custom" },
     { href: "/about", label: "About" },
+    { href: "/my-bookings", label: "My Bookings" },
     { href: "/admin", label: "Owner Dashboard" },
   ];
 
@@ -42,7 +43,6 @@ export default function Navbar() {
     <>
       <header className="fixed top-0 left-0 right-0 z-[100] px-4 py-4 max-w-6xl mx-auto">
         <nav className="bg-black/90 backdrop-blur-2xl border border-white/10 rounded-full px-6 py-3 flex items-center justify-between shadow-2xl shadow-orange-500/5">
-          {/* Brand Logo - Tiger Orange Accent */}
           <Link href="/" onClick={() => setMobileMenuOpen(false)} className="font-extrabold text-lg tracking-tight text-white flex items-center gap-2 group">
             <span className="text-white group-hover:text-orange-500 transition-colors">Pandey Tiger</span>
             <span className="text-xs bg-orange-500 text-black font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md shadow-orange-500/20">
@@ -50,7 +50,6 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -58,7 +57,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all relative ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all relative ${
                     isActive
                       ? "text-black bg-white shadow-lg"
                       : "text-zinc-400 hover:text-white hover:bg-white/10"
@@ -77,16 +76,17 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right Header Actions */}
           <div className="hidden lg:flex items-center gap-3">
             <a href="tel:9425331205" className="text-xs text-orange-500 font-bold flex items-center gap-1.5 hover:scale-105 transition-transform">
               <Phone className="w-3.5 h-3.5" /> +91 9425331205
             </a>
             {user ? (
               <div className="flex items-center gap-2 bg-zinc-900 border border-white/10 px-3.5 py-1.5 rounded-full text-xs text-zinc-200">
-                <User className="w-3.5 h-3.5 text-orange-500" />
-                <span className="max-w-[90px] truncate">{user.name}</span>
-                <button onClick={() => signOut(auth)} className="text-zinc-400 hover:text-red-400 ml-1">
+                <Link href="/my-bookings" className="flex items-center gap-1.5 hover:text-orange-400 transition-colors">
+                  <User className="w-3.5 h-3.5 text-orange-500" />
+                  <span className="max-w-[90px] truncate">{user.name}</span>
+                </Link>
+                <button onClick={() => signOut(auth)} className="text-zinc-400 hover:text-red-400 ml-1" title="Sign Out">
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -100,7 +100,6 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Hamburger Toggle Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden text-white p-2 rounded-full hover:bg-white/10 transition-colors focus:outline-none"
@@ -110,7 +109,6 @@ export default function Navbar() {
           </button>
         </nav>
 
-        {/* Mobile Full-Screen/Overlay Animated Menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div

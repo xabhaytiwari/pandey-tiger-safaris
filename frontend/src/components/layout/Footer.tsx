@@ -23,8 +23,9 @@ export default function Footer() {
         </div>
 
         <div>
-          <h5 className="text-white font-semibold mb-3">Business Owner</h5>
+          <h5 className="text-white font-semibold mb-3">Guest & Owner Links</h5>
           <ul className="space-y-2">
+            <li><Link href="/my-bookings" className="hover:text-white">My Safari Bookings</Link></li>
             <li><Link href="/about" className="hover:text-white">Dinesh Pandey Profile</Link></li>
             <li><Link href="/contact" className="hover:text-white">Bandhavgarh HQ</Link></li>
             <li><Link href="/admin" className="hover:text-white">Owner Dashboard</Link></li>
@@ -33,7 +34,7 @@ export default function Footer() {
 
         <div>
           <h5 className="text-white font-semibold mb-3">Direct Contact</h5>
-          <p className="text-amber-400 font-bold text-sm mb-1 flex items-center gap-1.5">
+          <p className="text-orange-500 font-bold text-sm mb-1 flex items-center gap-1.5">
             <Phone className="w-3.5 h-3.5" /> +91 9425331205
           </p>
           <p className="flex items-center gap-1.5 text-zinc-500 mb-1">
