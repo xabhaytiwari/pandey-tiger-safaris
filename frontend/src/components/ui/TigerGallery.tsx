@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, MapPin, Maximize2, X, Compass } from "lucide-react";
@@ -61,8 +62,12 @@ export default function TigerGallery() {
 
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [activeLightBox, setActiveLightBox] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
 
-  // Lock body scroll when modal is active
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (activeLightBox) {
       document.body.style.overflow = "hidden";
@@ -149,16 +154,26 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* Lightbox Modal */}
-      <AnimatePresence>
-        {activeLightBox && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
+      {/* Viewport-Centered Portal Modal (Uses top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 for 100% Dead-Center Positioning) */}
+      {mounted && activeLightBox && createPortal(
+        <AnimatePresence mode="wait">
+          <div>
+            {/* Backdrop */}
+            <div 
+              onClick={() => {
+                triggerHaptic(10);
+                setActiveLightBox(null);
+              }}
+              className="fixed inset-0 z-[9998] bg-black/90 backdrop-blur-xl" 
+            />
+
+            {/* Viewport Dead-Center Modal Card */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.92 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              exit={{ opacity: 0, scale: 0.92 }} 
+              initial={{ opacity: 0, scale: 0.9, y: "-50%", x: "-50%" }} 
+              animate={{ opacity: 1, scale: 1, y: "-50%", x: "-50%" }} 
+              exit={{ opacity: 0, scale: 0.9, y: "-50%", x: "-50%" }} 
               transition={{ type: "spring", stiffness: 450, damping: 30 }}
-              className="relative max-w-2xl w-full max-h-[85vh] bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between"
+              className="fixed top-1/2 left-1/2 z-[9999] w-[92vw] max-w-2xl max-h-[85vh] bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between"
             >
               {/* Close Button */}
               <button 
@@ -166,13 +181,13 @@ export default function TigerGallery() {
                   triggerHaptic(10);
                   setActiveLightBox(null);
                 }} 
-                className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-black p-2.5 rounded-full text-white hover:text-orange-400 border border-white/10 active:scale-95 transition-all cursor-pointer"
+                className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-black p-2 rounded-full text-white hover:text-orange-400 border border-white/10 active:scale-95 transition-all cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
 
               {/* Compact Image */}
-              <div className="relative h-[220px] sm:h-[280px] md:h-[320px] w-full bg-black overflow-hidden flex-shrink-0">
+              <div className="relative h-[220px] sm:h-[260px] md:h-[300px] w-full bg-black overflow-hidden flex-shrink-0">
                 <img 
                   src={activeLightBox.image_url} 
                   alt={activeLightBox.title} 
@@ -217,8 +232,9 @@ export default function TigerGallery() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </section>
   );
 }
