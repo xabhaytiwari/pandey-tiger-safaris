@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { submitBooking } from "../../lib/api";
-import { Calendar, CheckCircle2 } from "lucide-react";
+import { Calendar, CheckCircle2, MessageSquare, Phone } from "lucide-react";
 
 export default function BookingWizard({ packages = [], cars = [], availability = [] }: any) {
   const [step, setStep] = useState(1);
@@ -24,74 +24,111 @@ export default function BookingWizard({ packages = [], cars = [], availability =
     setSubmitted(true);
   };
 
-  return (
-    <section id="booking" className="py-20 bg-zinc-900 text-white px-4">
-      <div className="max-w-3xl mx-auto bg-zinc-950 border border-zinc-800 rounded-2xl p-6 md:p-10 shadow-2xl">
-        <h2 className="text-3xl font-bold text-center text-amber-500 mb-2">Guided Booking Wizard</h2>
-        <p className="text-zinc-400 text-center mb-8">Reserve your Bandhavgarh safari slot in 3 easy steps</p>
+  const selectedPkg = packages.find((p: any) => p.id === formData.package_id)?.title || "Bandhavgarh Safari";
+  const selectedCar = cars.find((c: any) => c.id === formData.car_id)?.name || "Safari Jeep";
 
-        <div className="flex justify-between items-center mb-8 border-b border-zinc-800 pb-4 text-sm font-medium">
-          <span className={step >= 1 ? "text-amber-500" : "text-zinc-600"}>1. Package & Vehicle</span>
-          <span className={step >= 2 ? "text-amber-500" : "text-zinc-600"}>2. Pick Date</span>
-          <span className={step >= 3 ? "text-amber-500" : "text-zinc-600"}>3. Guest Details</span>
+  // Pre-filled WhatsApp notification message for Dinesh Pandey
+  const whatsappText = encodeURIComponent(
+    `*NEW SAFARI BOOKING REQUEST*\n\n` +
+    `*Guest:* ${formData.customer_name}\n` +
+    `*Phone:* ${formData.customer_phone}\n` +
+    `*Package:* ${selectedPkg}\n` +
+    `*Vehicle:* ${selectedCar}\n` +
+    `*Date:* ${formData.booking_date}\n` +
+    `*Guests:* ${formData.guests_count}`
+  );
+
+  const whatsappUrl = `https://wa.me/919425331205?text=${whatsappText}`;
+
+  return (
+    <section id="booking" className="py-12 bg-black text-white">
+      <div className="max-w-3xl mx-auto bg-zinc-900/40 border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl backdrop-blur-md">
+        <h2 className="text-3xl font-extrabold text-center text-white mb-2">Guided Safari Booking</h2>
+        <p className="text-zinc-400 text-center text-sm mb-8">Reserve your Bandhavgarh tiger safari in 3 easy steps</p>
+
+        <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4 text-xs font-semibold uppercase tracking-wider">
+          <span className={step >= 1 ? "text-amber-400" : "text-zinc-600"}>1. Package & Vehicle</span>
+          <span className={step >= 2 ? "text-amber-400" : "text-zinc-600"}>2. Pick Date</span>
+          <span className={step >= 3 ? "text-amber-400" : "text-zinc-600"}>3. Guest Details</span>
         </div>
 
         {submitted ? (
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-10 space-y-4">
-            <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
-            <h3 className="text-2xl font-bold">Booking Request Sent!</h3>
-            <p className="text-zinc-400">Dinesh Pandey&apos;s team at Bandhavgarh HQ will contact you shortly to confirm permits.</p>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8 space-y-6">
+            <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto" />
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-white">Booking Saved to Cloud!</h3>
+              <p className="text-zinc-400 text-sm max-w-md mx-auto">
+                Your details are saved. Send an instant WhatsApp notification directly to founder <strong>Dinesh Pandey (+91 9425331205)</strong> to confirm permits immediately.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-emerald-500 hover:bg-emerald-600 text-black font-bold px-6 py-3.5 rounded-full flex items-center justify-center gap-2 transition-all text-sm shadow-lg shadow-emerald-500/20"
+              >
+                <MessageSquare className="w-4 h-4" /> Send Instant WhatsApp Alert
+              </a>
+              <a
+                href="tel:9425331205"
+                className="bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3.5 rounded-full flex items-center justify-center gap-2 transition-all text-sm"
+              >
+                <Phone className="w-4 h-4 text-amber-400" /> Call +91 9425331205
+              </a>
+            </div>
           </motion.div>
         ) : (
           <form onSubmit={handleSubmit}>
             <AnimatePresence mode="wait">
               {step === 1 && (
-                <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                <motion.div key="step1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-semibold mb-2">Choose Tour Package</label>
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Tour Package</label>
                     <select
                       value={formData.package_id}
-                      onChange={(e) => setFormData({ ...formData, package_id: Number(e.target.value) })}
-                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-amber-500"
+                      onChange={(e) => setFormData({ ...formData, package_id: e.target.value })}
+                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm"
                     >
                       {packages.map((pkg: any) => (
-                        <option key={pkg.id} value={pkg.id}>{pkg.title} (${pkg.price})</option>
+                        <option key={pkg.id} value={pkg.id} className="bg-zinc-900">{pkg.title} — ₹{pkg.price_inr?.toLocaleString("en-IN")}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-2">Choose Vehicle (Car)</label>
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Transfer Vehicle</label>
                     <select
                       value={formData.car_id}
-                      onChange={(e) => setFormData({ ...formData, car_id: Number(e.target.value) })}
-                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-amber-500"
+                      onChange={(e) => setFormData({ ...formData, car_id: e.target.value })}
+                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm"
                     >
                       {cars.map((car: any) => (
-                        <option key={car.id} value={car.id}>{car.name} ({car.category})</option>
+                        <option key={car.id} value={car.id} className="bg-zinc-900">{car.name} ({car.category})</option>
                       ))}
                     </select>
                   </div>
 
-                  <button type="button" onClick={() => setStep(2)} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold py-3 rounded-lg transition-all">
-                    Next: Calendar Availability &rarr;
+                  <button type="button" onClick={() => setStep(2)} className="w-full bg-white text-black font-bold py-3.5 rounded-xl transition-all text-sm">
+                    Next: Select Safari Date &rarr;
                   </button>
                 </motion.div>
               )}
 
               {step === 2 && (
-                <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <label className="block text-sm font-semibold mb-2">Select Available Date</label>
+                <motion.div key="step2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Select Available Date</label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {availability.map((item: any) => (
                       <button
                         type="button"
                         key={item.id}
                         onClick={() => setFormData({ ...formData, booking_date: item.date })}
-                        className={`p-3 rounded-lg border text-center transition-all ${
+                        className={`p-3 rounded-xl border text-center transition-all text-xs font-medium ${
                           formData.booking_date === item.date
-                            ? "bg-amber-500 text-zinc-950 font-bold border-amber-500"
-                            : "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
+                            ? "bg-amber-500 text-black font-bold border-amber-500 shadow-md"
+                            : "bg-black/40 border-white/10 hover:border-white/30 text-zinc-300"
                         }`}
                       >
                         <Calendar className="w-4 h-4 mx-auto mb-1" />
@@ -101,23 +138,23 @@ export default function BookingWizard({ packages = [], cars = [], availability =
                   </div>
 
                   <div className="flex gap-4">
-                    <button type="button" onClick={() => setStep(1)} className="w-1/2 bg-zinc-800 hover:bg-zinc-700 py-3 rounded-lg">Back</button>
-                    <button type="button" onClick={() => setStep(3)} disabled={!formData.booking_date} className="w-1/2 bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold py-3 rounded-lg disabled:opacity-50">
-                      Next: Contact Info &rarr;
+                    <button type="button" onClick={() => setStep(1)} className="w-1/2 bg-white/5 hover:bg-white/10 border border-white/10 py-3.5 rounded-xl text-sm">Back</button>
+                    <button type="button" onClick={() => setStep(3)} disabled={!formData.booking_date} className="w-1/2 bg-white text-black font-bold py-3.5 rounded-xl text-sm disabled:opacity-50">
+                      Next: Contact Details &rarr;
                     </button>
                   </div>
                 </motion.div>
               )}
 
               {step === 3 && (
-                <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                <motion.div key="step3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
                   <input
                     type="text"
                     placeholder="Full Name"
                     required
                     value={formData.customer_name}
                     onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3"
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm"
                   />
                   <input
                     type="email"
@@ -125,19 +162,19 @@ export default function BookingWizard({ packages = [], cars = [], availability =
                     required
                     value={formData.customer_email}
                     onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3"
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm"
                   />
                   <input
                     type="tel"
-                    placeholder="Phone Number"
+                    placeholder="Phone Number (e.g. 9876543210)"
                     required
                     value={formData.customer_phone}
                     onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3"
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-amber-500 text-sm"
                   />
                   <div className="flex gap-4 pt-2">
-                    <button type="button" onClick={() => setStep(2)} className="w-1/2 bg-zinc-800 hover:bg-zinc-700 py-3 rounded-lg">Back</button>
-                    <button type="submit" className="w-1/2 bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold py-3 rounded-lg">Confirm Safari</button>
+                    <button type="button" onClick={() => setStep(2)} className="w-1/2 bg-white/5 hover:bg-white/10 border border-white/10 py-3.5 rounded-xl text-sm">Back</button>
+                    <button type="submit" className="w-1/2 bg-white text-black font-bold py-3.5 rounded-xl text-sm">Confirm Safari Request</button>
                   </div>
                 </motion.div>
               )}
