@@ -1,4 +1,4 @@
-// Singleton AudioContext Instance to prevent memory leaks
+// Singleton AudioContext Instance
 let globalAudioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
@@ -15,49 +15,41 @@ function getAudioContext(): AudioContext | null {
   return globalAudioCtx;
 }
 
-// Dual-Layer Synthesizer: Sharp Click Attack (Highs) + Deep Bassy Thock (Sub-Bass)
-function playClickyBassySound(isTypewriter: boolean = false) {
+// Organic Low-Pass Filtered Velvet Acoustic Tap
+function playOrganicAcousticClick(isTypewriter: boolean = false) {
   const ctx = getAudioContext();
   if (!ctx) return;
 
   try {
     const now = ctx.currentTime;
 
-    // Layer 1: Crisp Sharp "Click" Transient (Highs)
-    const clickOsc = ctx.createOscillator();
-    const clickGain = ctx.createGain();
+    // 1. Organic Sine Oscillator
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(isTypewriter ? 220 : 180, now);
+    osc.frequency.exponentialRampToValueAtTime(55, now + 0.025);
 
-    clickOsc.type = "triangle";
-    clickOsc.frequency.setValueAtTime(isTypewriter ? 1900 : 1700, now);
-    clickOsc.frequency.exponentialRampToValueAtTime(320, now + 0.008); // Fast 8ms click attack
+    // 2. Biquad Low-Pass Filter (Removes harsh metallic highs -> creates warm wood/velvet thock)
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(800, now);
+    filter.Q.setValueAtTime(1, now);
 
-    clickGain.gain.setValueAtTime(0.12, now);
-    clickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
+    // 3. Whisper-Quiet Gain Envelope (0.015 - 0.025 volume)
+    const gain = ctx.createGain();
+    const volume = isTypewriter ? 0.015 : 0.025;
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.025);
 
-    clickOsc.connect(clickGain);
-    clickGain.connect(ctx.destination);
+    // Signal Chain: Oscillator -> LowPass Filter -> Gain -> Speakers
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
 
-    clickOsc.start(now);
-    clickOsc.stop(now + 0.012);
-
-    // Layer 2: Deep Bassy "Thock" Punch (Sub-Bass Lows)
-    const bassOsc = ctx.createOscillator();
-    const bassGain = ctx.createGain();
-
-    bassOsc.type = "sine";
-    bassOsc.frequency.setValueAtTime(isTypewriter ? 190 : 160, now);
-    bassOsc.frequency.exponentialRampToValueAtTime(45, now + 0.065); // 65ms deep sub-bass drop (190Hz -> 45Hz)
-
-    bassGain.gain.setValueAtTime(0.22, now); // Substantially higher bass volume
-    bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.065);
-
-    bassOsc.connect(bassGain);
-    bassGain.connect(ctx.destination);
-
-    bassOsc.start(now);
-    bassOsc.stop(now + 0.065);
+    osc.start(now);
+    osc.stop(now + 0.025);
   } catch (e) {
-    // Ignore browser autoplay restrictions until interaction
+    // Ignore autoplay restrictions
   }
 }
 
@@ -66,7 +58,7 @@ class TypewriterSound {
 
   playClick() {
     if (this.isMuted) return;
-    playClickyBassySound(true);
+    playOrganicAcousticClick(true);
   }
 
   toggleMute() {
@@ -77,7 +69,7 @@ class TypewriterSound {
 
 export const typewriterSound = new TypewriterSound();
 
-// Universal Haptic Engine (Vibration + Clicky/Bassy Sound)
+// Universal Haptic & Organic Click Helper
 export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
   if (typeof window === "undefined") return;
 
@@ -91,11 +83,11 @@ export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
     }
   }
 
-  // 2. Play Clicky & Bassy Audio Pulse
-  playClickyBassySound(false);
+  // 2. Organic Low-Pass Acoustic Tap
+  playOrganicAcousticClick(false);
 };
 
-// Global Capture-Phase Event Delegator for Instant Touch Response
+// Global Event Delegator for Buttons and Links
 if (typeof window !== "undefined") {
   const handleGlobalClick = (e: Event) => {
     const target = e.target as HTMLElement | null;
