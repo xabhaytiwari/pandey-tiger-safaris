@@ -4,16 +4,16 @@ import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Pandey Tiger Safaris | Bandhavgarh",
-  description: "Official Bandhavgarh Tiger Safaris guided by founder Dinesh Pandey (9425331205).",
+  title: "Pandey Tiger Safaris | Bandhavgarh & MP Reserves",
+  description: "Official MP Tiger Safaris operated by business owner Dinesh Pandey (9425331205).",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark scroll-smooth">
-      <body className="bg-black text-zinc-100 antialiased selection:bg-amber-500 selection:text-black">
+      <body className="bg-black text-zinc-100 antialiased selection:bg-orange-500 selection:text-black overflow-x-hidden">
         <Navbar />
-        <div className="pt-24">{children}</div>
+        <div className="pt-20">{children}</div>
         <Footer />
       </body>
     </html>

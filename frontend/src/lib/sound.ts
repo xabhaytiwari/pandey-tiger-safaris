@@ -2,10 +2,6 @@ class TypewriterSound {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
 
-  constructor() {
-    // Lazy initialize AudioContext on user interaction
-  }
-
   private initCtx() {
     if (!this.ctx && typeof window !== "undefined") {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -27,18 +23,20 @@ class TypewriterSound {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(700 + Math.random() * 250, this.ctx.currentTime);
-      gain.gain.setValueAtTime(0.015, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.035);
+      // Triangle wave + 5x higher gain (0.08) for rich, substantial mechanical click sound
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(850 + Math.random() * 250, this.ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.05);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc.start();
-      osc.stop(this.ctx.currentTime + 0.035);
+      osc.stop(this.ctx.currentTime + 0.05);
     } catch (e) {
-      // Ignore audio restriction errors
+      // Ignore browser autoplay restrictions until interaction
     }
   }
 

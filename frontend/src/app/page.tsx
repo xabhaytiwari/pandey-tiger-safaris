@@ -9,7 +9,6 @@ import GallerySlideshow from "../components/ui/GallerySlideshow";
 import { Compass, Sparkles, ArrowRight, Car, Users } from "lucide-react";
 
 export default function Home() {
-  // Exact Tiger & Shesh Shaiya background images array (Default 1st: Bandhavgarh Tiger)
   const heroBackgrounds = [
     "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg",
     "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/4b18dd77fedec8fa7534763a1d447f30e8e2cdf9.jpg",
@@ -22,7 +21,6 @@ export default function Home() {
 
   const [bgIndex, setBgIndex] = useState(0);
 
-  // Background Autoplay Cross-Fade Effect (4 Seconds Interval)
   useEffect(() => {
     const timer = setInterval(() => {
       setBgIndex((prev) => (prev + 1) % heroBackgrounds.length);
@@ -44,27 +42,27 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white px-4">
-      {/* Hero Section */}
-      <section className="relative max-w-6xl mx-auto pt-28 pb-20 md:pt-36 md:pb-28 flex flex-col items-center text-center overflow-hidden rounded-3xl my-4 border border-white/10">
+    <main className="min-h-screen bg-black text-white overflow-x-hidden">
+      {/* End-to-End Screen Width Hero Section */}
+      <section className="relative w-screen left-1/2 right-1/2 -mx-[50vw] pt-28 pb-20 md:pt-36 md:pb-28 flex flex-col items-center text-center overflow-hidden min-h-[85vh] justify-center">
         
-        {/* Autoplay Background Image Carousel with Blur & Gradient Mask */}
+        {/* Full-Bleed Autoplay Background Image Carousel */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.img
               key={heroBackgrounds[bgIndex]}
               src={heroBackgrounds[bgIndex]}
               alt="Tiger Background"
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 0.35, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 1.04 }}
+              animate={{ opacity: 0.48, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 1.2, ease: "easeInOut" }}
-              className="w-full h-full object-cover filter blur-[3px]"
+              className="w-full h-full object-cover filter blur-[1px]"
             />
           </AnimatePresence>
 
-          {/* Gradient Masks (Top & Bottom Fade to Jet Black #000000) */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80" />
+          {/* Perfect Gradient Masks Fading into Jet Black #000000 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/75" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black" />
         </div>
 
@@ -73,7 +71,7 @@ export default function Home() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="relative z-10 space-y-8 max-w-4xl"
+          className="relative z-10 space-y-8 max-w-5xl mx-auto px-6"
         >
           {/* Badge */}
           <motion.div variants={itemVariants} className="inline-flex">
@@ -89,7 +87,7 @@ export default function Home() {
           </motion.h1>
 
           {/* Description */}
-          <motion.p variants={itemVariants} className="text-zinc-300 text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed backdrop-blur-xs">
+          <motion.p variants={itemVariants} className="text-zinc-200 text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed drop-shadow-md">
             Spearheaded by business owner Dinesh Pandey (+91 9425331205). Complete tour packages, luxury transport (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed safari guides on demand.
           </motion.p>
 
@@ -102,7 +100,7 @@ export default function Home() {
             </motion.div>
 
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
-              <Link href="/custom-package" className="w-full sm:w-auto px-9 py-4 bg-zinc-900/90 border border-white/15 text-white font-bold text-sm rounded-full hover:bg-zinc-800 transition-all flex items-center justify-center gap-2.5 backdrop-blur-xl">
+              <Link href="/custom-package" className="w-full sm:w-auto px-9 py-4 bg-zinc-900/90 border border-white/20 text-white font-bold text-sm rounded-full hover:bg-zinc-800 transition-all flex items-center justify-center gap-2.5 backdrop-blur-xl">
                 Custom Safari Request <ArrowRight className="w-4 h-4 text-orange-500" />
               </Link>
             </motion.div>
@@ -131,17 +129,17 @@ export default function Home() {
       </section>
 
       {/* Royal Bengal Tiger Photography Showcase */}
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto px-4">
         <TigerGallery />
       </div>
 
       {/* Real Owner & Fleet Slideshow */}
-      <div className="max-w-6xl mx-auto py-12">
+      <div className="max-w-6xl mx-auto py-12 px-4">
         <GallerySlideshow />
       </div>
 
       {/* Bento Grid Section */}
-      <section className="max-w-6xl mx-auto py-16">
+      <section className="max-w-6xl mx-auto py-16 px-4">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
