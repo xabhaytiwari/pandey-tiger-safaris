@@ -137,46 +137,68 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* Lightbox Modal with Park Booking Prompt */}
+      {/* Tight, Non-Scrollable Lightbox Modal */}
       <AnimatePresence>
         {activeLightBox && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative max-w-4xl w-full bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-xl p-3 md:p-6">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.92 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.92 }} 
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="relative max-w-3xl w-full max-h-[85vh] bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between"
+            >
+              {/* Close Button */}
               <button 
                 onClick={() => {
                   triggerHaptic(10);
                   setActiveLightBox(null);
                 }} 
-                className="absolute top-4 right-4 z-20 bg-black/80 p-2.5 rounded-full text-white hover:text-orange-400 border border-white/10 active:scale-95"
+                className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-black p-2 rounded-full text-white hover:text-orange-400 border border-white/10 active:scale-95 transition-all"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
 
-              <div className="relative h-[450px] md:h-[520px] w-full">
-                <img src={activeLightBox.image_url} alt={activeLightBox.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+              {/* Tight Compact Image Container */}
+              <div className="relative h-[240px] sm:h-[300px] md:h-[360px] w-full bg-black overflow-hidden flex-shrink-0">
+                <img 
+                  src={activeLightBox.image_url} 
+                  alt={activeLightBox.title} 
+                  className="w-full h-full object-cover object-center" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
+              </div>
 
-                <div className="absolute bottom-6 left-6 right-6 space-y-3 text-white z-20">
-                  <span className="text-xs font-extrabold text-black bg-orange-500 px-3 py-1 rounded-full uppercase tracking-wider">
+              {/* Tight Content Box below image */}
+              <div className="p-4 md:p-6 space-y-3 bg-zinc-950 text-white z-20">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <span className="text-[10px] uppercase font-extrabold text-black bg-orange-500 px-2.5 py-0.5 rounded-full tracking-wider">
                     {activeLightBox.park} Sanctuary
                   </span>
-                  <h3 className="text-2xl md:text-3xl font-extrabold text-white">{activeLightBox.title}</h3>
-                  <p className="text-xs md:text-sm text-zinc-300 max-w-xl font-light">{activeLightBox.caption}</p>
+                  <span className="text-[10px] font-mono text-zinc-500 font-medium">MP Wildlife Circuit</span>
+                </div>
 
-                  {/* Park-Specific Booking Prompt Button */}
-                  <div className="pt-2">
-                    <Link
-                      href={`/booking?park=${encodeURIComponent(
-                        activeLightBox.park.includes("National Park") 
-                          ? activeLightBox.park 
-                          : `${activeLightBox.park} National Park`
-                      )}`}
-                      onClick={() => triggerHaptic(15)}
-                      className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-6 py-3.5 rounded-full text-xs transition-all shadow-xl shadow-orange-500/30 active:scale-95"
-                    >
-                      <Compass className="w-4 h-4" /> Book {activeLightBox.park} Safari Now &rarr;
-                    </Link>
-                  </div>
+                <h3 className="text-xl md:text-2xl font-extrabold text-white tracking-tight leading-snug">
+                  {activeLightBox.title}
+                </h3>
+                
+                <p className="text-xs text-zinc-400 font-light line-clamp-2 leading-relaxed">
+                  {activeLightBox.caption}
+                </p>
+
+                {/* Tight Booking CTA Button */}
+                <div className="pt-1">
+                  <Link
+                    href={`/booking?park=${encodeURIComponent(
+                      activeLightBox.park.includes("National Park") 
+                        ? activeLightBox.park 
+                        : `${activeLightBox.park} National Park`
+                    )}`}
+                    onClick={() => triggerHaptic(15)}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-6 py-3 rounded-full text-xs transition-all shadow-lg shadow-orange-500/25 active:scale-95"
+                  >
+                    <Compass className="w-4 h-4" /> Book {activeLightBox.park} Safari Now &rarr;
+                  </Link>
                 </div>
               </div>
             </motion.div>
