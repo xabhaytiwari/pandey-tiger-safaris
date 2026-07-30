@@ -1,4 +1,3 @@
-// Singleton AudioContext Instance to prevent memory leaks
 let globalAudioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
@@ -39,7 +38,7 @@ class TypewriterSound {
       osc.start();
       osc.stop(ctx.currentTime + 0.05);
     } catch (e) {
-      // Ignore initial browser restriction warnings
+      // Ignore
     }
   }
 
@@ -51,11 +50,9 @@ class TypewriterSound {
 
 export const typewriterSound = new TypewriterSound();
 
-// Universal Haptic Engine (Vibration + Singleton Tactile Pop)
 export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
   if (typeof window === "undefined") return;
 
-  // 1. Android Hardware Vibration
   if ("vibrate" in navigator) {
     try {
       const duration = type === "heavy" ? 25 : type === "medium" ? 18 : 10;
@@ -65,7 +62,6 @@ export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
     }
   }
 
-  // 2. Singleton Web Audio API Tactile Pop (Works on iPhones & Android)
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -91,7 +87,7 @@ export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
   }
 };
 
-// Global Capture-Phase Event Delegator: Triggers Haptic Feedback on EVERY button, link, or input across the entire app
+// Global Passive Capture-Phase Event Delegator for Instant 120Hz Touch Response
 if (typeof window !== "undefined") {
   const handleGlobalClick = (e: Event) => {
     const target = e.target as HTMLElement | null;
@@ -106,5 +102,5 @@ if (typeof window !== "undefined") {
     }
   };
 
-  window.addEventListener("click", handleGlobalClick, { capture: true });
+  window.addEventListener("click", handleGlobalClick, { capture: true, passive: true });
 }
