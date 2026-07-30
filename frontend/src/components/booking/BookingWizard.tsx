@@ -7,7 +7,7 @@ import { auth, onAuthStateChanged } from "../../lib/firebase";
 import AuthModal from "../auth/AuthModal";
 import { 
   Calendar as CalendarIcon, CheckCircle2, MessageSquare, Phone, CreditCard, ShieldCheck, 
-  Users, Upload, Globe, User, MapPin, Info, Lock, LogIn
+  Users, Upload, Globe, User, MapPin, Info, Lock, LogIn, Sun, Sunset, Clock
 } from "lucide-react";
 
 declare global {
@@ -30,6 +30,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
     package_id: packages[0]?.id || "",
     car_id: cars[0]?.id || "",
     booking_date: new Date().toISOString().split("T")[0],
+    safari_slot: "Morning Safari", // "Morning Safari" | "Evening Safari" | "Full Day / Both Safaris"
     customer_name: "",
     customer_email: "",
     customer_phone: "",
@@ -58,7 +59,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
     loadInitialData();
   }, []);
 
-  // Listen to Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -86,7 +86,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
   }, []);
 
   const filteredPackages = packages.filter((p: any) => !p.park_name || p.park_name === selectedParkName);
-  const selectedPkg = filteredPackages.find((p: any) => p.id === formData.package_id) || filteredPackages[0] || { title: "National Park Safari", price_inr: 28500 };
+  const selectedPkg = filteredPackages.find((p: any) => p.id === formData.package_id) || filteredPackages[0] || { title: "Custom Safari Circuit", price_inr: 28500 };
   const selectedCar = cars.find((c: any) => c.id === formData.car_id)?.name || "Safari Jeep";
 
   const advanceAmount = Math.round((selectedPkg.price_inr || 28500) * 0.25);
@@ -150,7 +150,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
         amount: orderData.amount,
         currency: "INR",
         name: "Pandey Tiger Safaris",
-        description: `${selectedPkg.title} (${formData.payment_type})`,
+        description: `${selectedPkg.title} (${formData.safari_slot})`,
         order_id: orderData.order_id,
         handler: async function (response: any) {
           await submitBooking({
@@ -203,6 +203,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
   const whatsappText = encodeURIComponent(
     `*NEW PREPAID SAFARI BOOKING*\n\n` +
     `*Park:* ${selectedParkName}\n` +
+    `*Slot:* ${formData.safari_slot}\n` +
     `*Guest:* ${formData.customer_name}\n` +
     `*Phone:* ${formData.customer_phone}\n` +
     `*Travelers:* ${formData.guests_count} Persons\n` +
@@ -221,7 +222,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
         <h2 className="text-3xl font-extrabold text-center text-white mb-2">Prepaid Safari Booking</h2>
         <p className="text-zinc-400 text-center text-sm mb-8">Official park permits reserved strictly upon ID verification & prepayment</p>
 
-        {/* Mandatory Sign-In Guard Banner */}
         {!currentUser && (
           <div className="bg-orange-500/10 border border-orange-500/40 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -249,7 +249,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
         )}
 
         <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4 text-xs font-semibold uppercase tracking-wider">
-          <span className={step >= 1 ? "text-orange-500 font-bold" : "text-zinc-600"}>1. Park & Vehicle</span>
+          <span className={step >= 1 ? "text-orange-500 font-bold" : "text-zinc-600"}>1. Park & Slot</span>
           <span className={step >= 2 ? "text-orange-500 font-bold" : "text-zinc-600"}>2. Date Dropdown</span>
           <span className={step >= 3 ? "text-orange-500 font-bold" : "text-zinc-600"}>3. ID Proof & Pay</span>
         </div>
@@ -260,7 +260,7 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
             <div className="space-y-2">
               <h3 className="text-2xl font-bold text-white">Booking Confirmed & Paid!</h3>
               <p className="text-zinc-400 text-sm max-w-md mx-auto">
-                Park: <strong>{selectedParkName}</strong> | Guest: <strong>{formData.customer_name}</strong>
+                Park: <strong>{selectedParkName}</strong> | Slot: <strong>{formData.safari_slot}</strong>
               </p>
               <p className="text-emerald-400 font-bold text-sm">
                 Status: {formData.payment_type} (₹{payableAmount.toLocaleString("en-IN")})
@@ -308,19 +308,68 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                     </select>
                   </div>
 
-                  {/* Choose Package */}
+                  {/* Choose Safari Timing Slot */}
                   <div>
-                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Tour Package ({selectedParkName})</label>
-                    <select
-                      value={formData.package_id}
-                      onChange={(e) => setFormData({ ...formData, package_id: e.target.value })}
-                      className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
-                    >
-                      {filteredPackages.map((pkg: any) => (
-                        <option key={pkg.id} value={pkg.id} className="bg-zinc-900">{pkg.title} — ₹{pkg.price_inr?.toLocaleString("en-IN")}</option>
-                      ))}
-                    </select>
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-orange-500" /> Choose Safari Timing Slot
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, safari_slot: "Morning Safari" })}
+                        className={`p-3.5 rounded-xl border text-left transition-all text-xs font-bold flex flex-col justify-between ${
+                          formData.safari_slot === "Morning Safari"
+                            ? "bg-orange-500 text-black border-orange-500"
+                            : "bg-black border-white/15 text-zinc-300"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5 mb-1"><Sun className="w-4 h-4" /> Morning Safari</span>
+                        <span className="text-[10px] opacity-80">06:00 AM – 10:00 AM</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, safari_slot: "Evening Safari" })}
+                        className={`p-3.5 rounded-xl border text-left transition-all text-xs font-bold flex flex-col justify-between ${
+                          formData.safari_slot === "Evening Safari"
+                            ? "bg-orange-500 text-black border-orange-500"
+                            : "bg-black border-white/15 text-zinc-300"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5 mb-1"><Sunset className="w-4 h-4" /> Evening Safari</span>
+                        <span className="text-[10px] opacity-80">03:00 PM – 06:30 PM</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, safari_slot: "Full Day / Both Safaris" })}
+                        className={`p-3.5 rounded-xl border text-left transition-all text-xs font-bold flex flex-col justify-between ${
+                          formData.safari_slot === "Full Day / Both Safaris"
+                            ? "bg-orange-500 text-black border-orange-500"
+                            : "bg-black border-white/15 text-zinc-300"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5 mb-1"><Clock className="w-4 h-4" /> Full Day / Both</span>
+                        <span className="text-[10px] opacity-80">Morning + Evening</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Choose Package */}
+                  {filteredPackages.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Choose Tour Package ({selectedParkName})</label>
+                      <select
+                        value={formData.package_id}
+                        onChange={(e) => setFormData({ ...formData, package_id: e.target.value })}
+                        className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
+                      >
+                        {filteredPackages.map((pkg: any) => (
+                          <option key={pkg.id} value={pkg.id} className="bg-zinc-900">{pkg.title} — ₹{pkg.price_inr?.toLocaleString("en-IN")}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Choose Vehicle */}
                   <div>
@@ -334,9 +383,6 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
                         <option key={car.id} value={car.id} className="bg-zinc-900">{car.name} ({car.category})</option>
                       ))}
                     </select>
-                    <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1 font-medium">
-                      <Info className="w-3.5 h-3.5" /> * Vehicle models shown in fleet are representative
-                    </p>
                   </div>
 
                   {/* Travelers Count */}
@@ -494,14 +540,13 @@ export default function BookingWizard({ packages = [], cars = [] }: any) {
 
                   <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-xl text-xs space-y-1">
                     <p className="font-bold text-white flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-orange-500" /> Payment Summary</p>
-                    <p className="text-zinc-300">Park: {selectedParkName} | Package: {selectedPkg.title}</p>
+                    <p className="text-zinc-300">Park: {selectedParkName} | Slot: {formData.safari_slot}</p>
                     <p className="text-orange-400 font-bold">Payable Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
                   </div>
 
                   <div className="flex gap-4 pt-2">
                     <button type="button" onClick={() => setStep(2)} className="w-1/2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 py-3.5 rounded-xl text-sm font-semibold">Back</button>
 
-                    {/* Action Button: Triggers Auth if not logged in */}
                     {!currentUser ? (
                       <button
                         type="button"

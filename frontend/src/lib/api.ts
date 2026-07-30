@@ -72,28 +72,7 @@ const SEED_DATA = {
       is_representative: true
     }
   ],
-  packages: [
-    {
-      id: "pkg_1",
-      park_name: "Bandhavgarh National Park",
-      title: "Royal Bengal Tiger Expedition",
-      duration: "3 Days / 2 Nights",
-      price_inr: 28500,
-      description: "4 Open Jeep Safaris in Tala and Magdhi zones with dedicated licensed guides and resort stays.",
-      highlights: "4 Safaris, Resort Stay, Railway Station Pickup",
-      image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: "pkg_2",
-      park_name: "Bandhavgarh National Park",
-      title: "Bandhavgarh Fort & Wildlife Trail",
-      duration: "4 Days / 3 Nights",
-      price_inr: 42000,
-      description: "Trek the ancient fort combined with morning and evening jungle tiger tracking.",
-      highlights: "6 Safaris, Ancient Fort Trek, Dedicated Fleet Support",
-      image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800"
-    }
-  ],
+  packages: [], // ZERO placeholders. All packages loaded live from Cloud Firestore!
   drivers: [],
   blocked_dates: [],
   reviews: [
