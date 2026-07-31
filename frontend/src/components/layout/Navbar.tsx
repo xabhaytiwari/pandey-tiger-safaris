@@ -33,6 +33,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
+    { href: "/social", label: "Safari Feed" },
     { href: "/gallery", label: "Gallery" },
     { href: "/sightings", label: "Live Map" },
     { href: "/packages", label: "Packages" },
