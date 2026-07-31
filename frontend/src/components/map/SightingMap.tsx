@@ -5,7 +5,7 @@ import { db, auth, onAuthStateChanged } from "../../lib/firebase";
 import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { getExifGPS, findNearestPark } from "../../lib/exif";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Sparkles, X, CheckCircle2, Flame, Upload, Camera, Navigation, Crosshair } from "lucide-react";
+import { MapPin, Sparkles, X, CheckCircle2, Flame, Upload, Navigation, Crosshair } from "lucide-react";
 import { triggerHaptic } from "../../lib/sound";
 import AuthModal from "../auth/AuthModal";
 
@@ -29,6 +29,7 @@ export default function SightingMap() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
+  // Sighting Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLatLng, setSelectedLatLng] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsDetected, setGpsDetected] = useState(false);
@@ -53,6 +54,7 @@ export default function SightingMap() {
     return () => unsub();
   }, []);
 
+  // Real-time Firestore sync
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "sightings"), (snapshot) => {
       const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -83,7 +85,7 @@ export default function SightingMap() {
     }
   }, []);
 
-  // Initialize Clean White OpenStreetMap (CartoDB Positron Light Tiles)
+  // Initialize Map with Clean White Tiles
   const initMap = () => {
     if (!window.L || mapInstanceRef.current) return;
 
@@ -95,7 +97,7 @@ export default function SightingMap() {
       zoomControl: true,
     });
 
-    // Clean White Tile Layer
+    // Clean White OpenStreetMap (CartoDB Positron)
     window.L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 18,
@@ -114,60 +116,102 @@ export default function SightingMap() {
     mapInstanceRef.current = map;
   };
 
+  // Fly Camera when Park Changes
   useEffect(() => {
     if (mapInstanceRef.current && PARK_COORDINATES[selectedPark]) {
       const coords = PARK_COORDINATES[selectedPark];
-      mapInstanceRef.current.setView([coords.lat, coords.lng], coords.zoom);
+      mapInstanceRef.current.flyTo([coords.lat, coords.lng], coords.zoom, { duration: 1.5, easeLinearity: 0.25 });
     }
   }, [selectedPark]);
 
-  // Color-Code Circles Based on Time Elapsed
+  // Render Blended Radial Gradient Heat Map & Filter Sightings > 24 Hours
   useEffect(() => {
     if (!window.L || !markersGroupRef.current) return;
 
     markersGroupRef.current.clearLayers();
 
-    const parkSightings = sightings.filter(
-      (s) => !s.park_name || s.park_name === selectedPark
-    );
-
     const now = Date.now();
 
-    parkSightings.forEach((s) => {
-      if (s.lat && s.lng) {
-        // Calculate Time Elapsed
-        const createdAtMs = s.createdAt?.seconds ? s.createdAt.seconds * 1000 : now;
-        const hoursAgo = (now - createdAtMs) / (1000 * 60 * 60);
+    // 1. Filter out sightings older than 24 hours (86,400,000 ms)
+    const validSightings = sightings.filter((s) => {
+      if (!s.lat || !s.lng) return false;
+      const parkMatches = !s.park_name || s.park_name === selectedPark;
+      const createdAtMs = s.createdAt?.seconds ? s.createdAt.seconds * 1000 : now;
+      const hoursAgo = (now - createdAtMs) / (1000 * 60 * 60);
+      return parkMatches && hoursAgo <= 24; // Exclude sightings older than 24h
+    });
 
-        // Dynamic Time-Based Circle Color
-        let circleColor = "#ff3b30"; // Red (< 2 hours ago)
-        if (hoursAgo >= 2 && hoursAgo < 12) {
-          circleColor = "#ff9500"; // Amber (2 - 12 hours ago)
-        } else if (hoursAgo >= 12) {
-          circleColor = "#5856d6"; // Blue/Purple (> 12 hours ago)
-        }
+    // 2. Render Soft Radial Gradient Auras for Seamless Heat Blending
+    validSightings.forEach((s) => {
+      const createdAtMs = s.createdAt?.seconds ? s.createdAt.seconds * 1000 : now;
+      const hoursAgo = (now - createdAtMs) / (1000 * 60 * 60);
 
-        window.L.circle([s.lat, s.lng], {
-          color: circleColor,
-          fillColor: circleColor,
-          fillOpacity: 0.45,
-          radius: 800,
-        }).addTo(markersGroupRef.current);
+      const coreColor = hoursAgo < 2 ? "rgba(255, 45, 85, 0.7)" : hoursAgo < 12 ? "rgba(255, 122, 0, 0.6)" : "rgba(88, 86, 214, 0.4)";
+      const outerColor = hoursAgo < 2 ? "rgba(255, 94, 0, 0.25)" : hoursAgo < 12 ? "rgba(255, 180, 0, 0.2)" : "rgba(88, 86, 214, 0.1)";
 
-        const popupContent = `
-          <div style="font-family: Arial, sans-serif; padding: 6px; color: #000;">
-            <strong style="color: ${circleColor}; font-size: 13px;">🐅 Tiger Sighting</strong><br/>
-            <span style="font-size: 11px; font-weight: bold;">${s.description || "Royal Bengal Tiger Spotted"}</span><br/>
-            <span style="font-size: 10px; color: #666;">Zone: ${s.zone_name || "Core Zone"} (${s.safari_slot || "Morning"})</span><br/>
-            <span style="font-size: 9px; color: #888;">Reported by: ${s.user_name || "Safari Guest"}</span>
+      // Soft Borderless Radial Gradient Icon
+      const heatIcon = window.L.divIcon({
+        className: "custom-radial-heat-glow",
+        html: `
+          <div style="
+            width: 140px; 
+            height: 140px; 
+            margin-left: -70px; 
+            margin-top: -70px; 
+            border-radius: 50%; 
+            background: radial-gradient(circle, ${coreColor} 0%, ${outerColor} 50%, rgba(0,0,0,0) 100%);
+            pointer-events: none;
+            filter: blur(2px);
+          "></div>
+        `,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
+      });
+
+      // Sleek Tiger Marker Badge
+      const pinColor = hoursAgo < 2 ? "#FF2D55" : hoursAgo < 12 ? "#FF7A00" : "#5856D6";
+      const tigerPinIcon = window.L.divIcon({
+        className: "custom-tiger-pin",
+        html: `
+          <div style="
+            position: relative;
+            width: 28px;
+            height: 28px;
+            margin-left: -14px;
+            margin-top: -14px;
+            background: #000000;
+            border: 2px solid ${pinColor};
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px ${pinColor};
+            cursor: pointer;
+          ">
+            <span style="font-size: 14px;">🐅</span>
           </div>
-        `;
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
 
-        window.L.marker([s.lat, s.lng]).addTo(markersGroupRef.current).bindPopup(popupContent);
-      }
+      // Add Radial Gradient Aura + Pin Marker
+      window.L.marker([s.lat, s.lng], { icon: heatIcon, interactive: false }).addTo(markersGroupRef.current);
+
+      const popupContent = `
+        <div style="font-family: Arial, sans-serif; padding: 6px; color: #000;">
+          <strong style="color: ${pinColor}; font-size: 13px;">🐅 Tiger Sighting</strong><br/>
+          <span style="font-size: 11px; font-weight: bold;">${s.description || "Royal Bengal Tiger"}</span><br/>
+          <span style="font-size: 10px; color: #666;">Zone: ${s.zone_name || "Core Zone"} (${s.safari_slot || "Morning"})</span><br/>
+          <span style="font-size: 9px; color: #888;">Reported: ${Math.round(hoursAgo)}h ago by ${s.user_name || "Guest"}</span>
+        </div>
+      `;
+
+      window.L.marker([s.lat, s.lng], { icon: tigerPinIcon }).addTo(markersGroupRef.current).bindPopup(popupContent);
     });
   }, [sightings, selectedPark]);
 
+  // LIVE SATELLITE GPS
   const handleDetectLiveGps = () => {
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
       alert("Satellite Geolocation is not supported by your browser.");
@@ -192,7 +236,7 @@ export default function SightingMap() {
         setIsModalOpen(true);
 
         if (mapInstanceRef.current) {
-          mapInstanceRef.current.setView([lat, lng], 14);
+          mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.5, easeLinearity: 0.25 });
         }
       },
       (error) => {
@@ -207,6 +251,7 @@ export default function SightingMap() {
     );
   };
 
+  // PHOTO EXIF GPS
   const handlePhotoAutoMark = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -231,7 +276,7 @@ export default function SightingMap() {
       setIsModalOpen(true);
 
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.setView([gps.lat, gps.lng], 14);
+        mapInstanceRef.current.flyTo([gps.lat, gps.lng], 14, { duration: 1.5, easeLinearity: 0.25 });
       }
     } else {
       alert("No EXIF GPS location found in photo. Defaulting to center of " + selectedPark + ". Tap on the map to set location.");
@@ -334,7 +379,6 @@ export default function SightingMap() {
       <div className="relative bg-white border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
         <div id="tiger-sightings-map" className="w-full h-[520px] z-10" />
 
-        {/* Floating Instruction Banner & Legend */}
         <div className="absolute top-4 left-4 z-20 bg-black/90 backdrop-blur-md border border-white/10 p-3.5 rounded-2xl text-xs text-white max-w-xs space-y-2">
           <p className="font-extrabold text-orange-400 flex items-center gap-1">
             <Flame className="w-4 h-4 text-orange-500" /> Click Map, Live GPS, or Photo
@@ -342,7 +386,7 @@ export default function SightingMap() {
           <div className="flex flex-col gap-1 text-[11px] font-semibold pt-1 border-t border-white/10">
             <span className="flex items-center gap-1.5 text-red-400"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Fresh Sighting (&lt; 2h ago)</span>
             <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Recent Sighting (2 - 12h ago)</span>
-            <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Past Sighting (&gt; 12h ago)</span>
+            <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Past Sighting (&lt; 24h ago)</span>
           </div>
         </div>
       </div>
