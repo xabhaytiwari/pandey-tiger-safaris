@@ -1,5 +1,6 @@
 let globalAudioCtx: AudioContext | null = null;
 
+// Only initialize AudioContext after explicit user gesture to avoid browser console warnings
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (!globalAudioCtx) {
@@ -16,13 +17,28 @@ function getAudioContext(): AudioContext | null {
 
 class TypewriterSound {
   private isMuted: boolean = false;
+  private userInteracted: boolean = false;
+
+  constructor() {
+    if (typeof window !== "undefined") {
+      const enableAudioOnGesture = () => {
+        this.userInteracted = true;
+        getAudioContext();
+        window.removeEventListener("click", enableAudioOnGesture);
+        window.removeEventListener("touchstart", enableAudioOnGesture);
+      };
+      window.addEventListener("click", enableAudioOnGesture, { once: true });
+      window.addEventListener("touchstart", enableAudioOnGesture, { once: true });
+    }
+  }
 
   playClick() {
-    if (this.isMuted) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
+    // Only play sound if user has interacted with the page & is not muted
+    if (this.isMuted || !this.userInteracted) return;
+    const ctx = getAudioContext();
+    if (!ctx || ctx.state === "suspended") return;
 
+    try {
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -39,7 +55,7 @@ class TypewriterSound {
       osc.start(now);
       osc.stop(now + 0.05);
     } catch {
-      // Fail-safe catch
+      // Fail-safe
     }
   }
 
@@ -65,7 +81,7 @@ export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
     }
 
     const ctx = getAudioContext();
-    if (!ctx) return;
+    if (!ctx || ctx.state === "suspended") return;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
@@ -85,7 +101,7 @@ export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
     osc.start(now);
     osc.stop(now + 0.015);
   } catch {
-    // Fail-safe catch so user actions NEVER break
+    // Fail-safe
   }
 };
 

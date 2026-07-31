@@ -6,7 +6,7 @@ import { submitBooking, fetchFromAPI } from "../../lib/api";
 import { auth, onAuthStateChanged } from "../../lib/firebase";
 import AuthModal from "../auth/AuthModal";
 import { 
-  Calendar as CalendarIcon, CheckCircle2, MessageSquare, Phone, CreditCard, ShieldCheck, 
+  Calendar, CheckCircle2, MessageSquare, Phone, CreditCard, ShieldCheck, 
   Users, Upload, Globe, User, MapPin, Info, Lock, LogIn, Sun, Sunset, Clock, AlertTriangle
 } from "lucide-react";
 
@@ -103,16 +103,8 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
   const requiredVehicleCount = singleCarCap > 0 ? Math.ceil(formData.guests_count / singleCarCap) : 1;
   const suitableCars = cars.filter((c: any) => c.capacity === 0 || c.capacity >= formData.guests_count);
 
-  // BUSINESS LOGIC: Check if selected date is Saturday (6) or Sunday (0)
-  const selectedDayOfWeek = new Date(formData.booking_date).getDay();
-  const isWeekend = selectedDayOfWeek === 0 || selectedDayOfWeek === 6;
-  const weekendSurgeINR = isWeekend ? 2500 : 0;
-
-  // Foreigner Permit Surcharge
   const foreignerSurcharge = formData.nationality === "Non-Indian" ? formData.guests_count * 4500 : 0;
-
-  // Final Total Price Calculation
-  const totalPriceINR = (selectedPkg.price_inr || 28500) + foreignerSurcharge + weekendSurgeINR;
+  const totalPriceINR = (selectedPkg.price_inr || 28500) + foreignerSurcharge;
 
   const advanceAmount = Math.round(totalPriceINR * 0.25);
   const payableAmount = formData.payment_type === "Advance Paid" ? advanceAmount : totalPriceINR;
@@ -191,8 +183,6 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
             car_name: `${requiredVehicleCount}x ${selectedCarName}`,
             vehicle_count: requiredVehicleCount,
             total_price_inr: totalPriceINR,
-            weekend_surge_inr: weekendSurgeINR,
-            foreigner_surcharge_inr: foreignerSurcharge,
             payment_status: formData.payment_type,
             amount_paid_inr: payableAmount,
             balance_due_inr: balanceDueINR,
@@ -223,8 +213,6 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
           car_name: `${requiredVehicleCount}x ${selectedCarName}`,
           vehicle_count: requiredVehicleCount,
           total_price_inr: totalPriceINR,
-          weekend_surge_inr: weekendSurgeINR,
-          foreigner_surcharge_inr: foreignerSurcharge,
           payment_status: formData.payment_type,
           amount_paid_inr: payableAmount,
           balance_due_inr: balanceDueINR,
@@ -236,7 +224,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
       }
     } catch (err) {
       console.error("Payment error:", err);
-    } finally {
+    } fontally {
       setPaymentLoading(false);
     }
   };
@@ -248,10 +236,10 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
     `*Guest:* ${formData.customer_name}\n` +
     `*Phone:* ${formData.customer_phone}\n` +
     `*Travelers:* ${formData.guests_count} Persons\n` +
-    `*Nationality:* ${formData.nationality}\n` +
+    `*Nationality:* ${formData.nationality} (${formData.id_proof_type})\n` +
     `*Package:* ${selectedPkg.title}\n` +
     `*Vehicle:* ${requiredVehicleCount}x ${selectedCarName}\n` +
-    `*Date:* ${formData.booking_date}${isWeekend ? " (Weekend)" : ""}\n` +
+    `*Date:* ${formData.booking_date}\n` +
     `*Paid:* ₹${payableAmount} | *Balance Due:* ₹${balanceDueINR}`
   );
 
@@ -291,7 +279,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
 
         <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4 text-xs font-semibold uppercase tracking-wider">
           <span className={step >= 1 ? "text-orange-500 font-bold" : "text-zinc-600"}>1. Park & Vehicle</span>
-          <span className={step >= 2 ? "text-orange-500 font-bold" : "text-zinc-600"}>2. Date & Plan</span>
+          <span className={step >= 2 ? "text-orange-500 font-bold" : "text-zinc-600"}>2. Date Dropdown</span>
           <span className={step >= 3 ? "text-orange-500 font-bold" : "text-zinc-600"}>3. ID Proof & Pay</span>
         </div>
 
@@ -439,11 +427,15 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                       ))}
                     </select>
 
-                    {requiredVehicleCount > 1 && (
+                    {requiredVehicleCount > 1 ? (
                       <div className="mt-2 text-xs text-orange-400 bg-orange-500/10 border border-orange-500/30 p-3 rounded-xl flex items-center gap-2 font-bold">
                         <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />
                         <span>{formData.guests_count} Travelers require {requiredVehicleCount}x {selectedCarName}s to comfortably accommodate your party.</span>
                       </div>
+                    ) : (
+                      <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1 font-medium">
+                        <Info className="w-3.5 h-3.5" /> * Vehicle models shown in fleet are representative
+                      </p>
                     )}
                   </div>
 
@@ -457,7 +449,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                 <motion.div key="step2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <CalendarIcon className="w-4 h-4 text-orange-500" /> Choose Available Date (Scrollable 365 Days)
+                      <Calendar className="w-4 h-4 text-orange-500" /> Choose Available Date (Scrollable 365 Days)
                     </label>
                     <select
                       value={formData.booking_date}
@@ -471,12 +463,6 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                       ))}
                     </select>
                   </div>
-
-                  {isWeekend && (
-                    <p className="text-[11px] text-amber-400 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 font-semibold">
-                      * Saturday/Sunday Weekend Permit Surge (+₹2,500) applied as per MP Forest Dept gate regulations.
-                    </p>
-                  )}
 
                   <div className="pt-2 border-t border-white/10 space-y-3">
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Select Prepayment Plan</label>
@@ -610,17 +596,11 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                     </label>
                   </div>
 
-                  {/* Itemized Price Summary */}
-                  <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-xl text-xs space-y-1.5">
-                    <p className="font-bold text-white flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-orange-500" /> Itemized Price Breakdown</p>
-                    <div className="space-y-0.5 text-zinc-300 border-b border-white/10 pb-2">
-                      <p className="flex justify-between"><span>Base Package ({selectedPkg.title}):</span> <span>₹{selectedPkg.price_inr?.toLocaleString("en-IN")}</span></p>
-                      {foreignerSurcharge > 0 && <p className="flex justify-between text-amber-400"><span>Foreigner Surcharge ({formData.guests_count} Guests):</span> <span>+₹{foreignerSurcharge.toLocaleString("en-IN")}</span></p>}
-                      {isWeekend && <p className="flex justify-between text-amber-400"><span>Weekend Permit Surge (Sat/Sun):</span> <span>+₹{weekendSurgeINR.toLocaleString("en-IN")}</span></p>}
-                      <p className="flex justify-between font-bold text-white pt-1"><span>Total Tour Price:</span> <span>₹{totalPriceINR.toLocaleString("en-IN")}</span></p>
-                    </div>
-
-                    <p className="text-orange-400 font-bold pt-1">Payable Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
+                  <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-xl text-xs space-y-1">
+                    <p className="font-bold text-white flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-orange-500" /> Payment Summary</p>
+                    <p className="text-zinc-300">Park: {selectedParkName} | Slot: {formData.safari_slot}</p>
+                    <p className="text-zinc-300">Vehicles: {requiredVehicleCount}x {selectedCarName} ({formData.guests_count} Guests)</p>
+                    <p className="text-orange-400 font-bold">Payable Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
                     {balanceDueINR > 0 && <p className="text-amber-400 font-semibold">Balance Due on Arrival: ₹{balanceDueINR.toLocaleString("en-IN")}</p>}
                   </div>
 
