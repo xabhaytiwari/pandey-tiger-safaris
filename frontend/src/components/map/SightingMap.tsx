@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { db, auth, onAuthStateChanged } from "../../lib/firebase";
-import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, serverTimestamp, getDocs } from "firebase/firestore";
 import { getExifGPS, findNearestPark } from "../../lib/exif";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Sparkles, X, CheckCircle2, Flame, Upload, Navigation, Crosshair, Globe } from "lucide-react";
+import { MapPin, Sparkles, X, CheckCircle2, Flame, Upload, Navigation, Crosshair, Globe, RotateCw } from "lucide-react";
 import { triggerHaptic } from "../../lib/sound";
 import AuthModal from "../auth/AuthModal";
 
@@ -31,7 +31,10 @@ export default function SightingMap() {
   const [sightings, setSightings] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [mapStyle, setMapStyle] = useState<"satellite" | "light">("satellite"); // Default to Satellite
+  const [mapStyle, setMapStyle] = useState<"satellite" | "light">("satellite");
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdatedText, setLastUpdatedText] = useState("Just now");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLatLng, setSelectedLatLng] = useState<{ lat: number; lng: number } | null>(null);
@@ -58,13 +61,31 @@ export default function SightingMap() {
     return () => unsub();
   }, []);
 
+  // Real-time Firestore sync
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "sightings"), (snapshot) => {
       const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setSightings(docs);
+      setLastUpdatedText("Just now");
     });
     return () => unsub();
   }, []);
+
+  // Manual Refresh Handler
+  const handleManualRefresh = async () => {
+    triggerHaptic(12);
+    setIsRefreshing(true);
+    try {
+      const snapshot = await getDocs(collection(db, "sightings"));
+      const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setSightings(docs);
+      setLastUpdatedText("Just now");
+    } catch (err) {
+      console.error("Refresh error:", err);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -87,6 +108,44 @@ export default function SightingMap() {
       initMap();
     }
   }, []);
+
+  // Inject SVG Radial Gradients for Strong Blending
+  const injectSvgGradients = (map: any) => {
+    try {
+      const svg = map.getPanes().overlayPane.querySelector("svg");
+      if (!svg) return;
+
+      let defs = svg.querySelector("defs");
+      if (!defs) {
+        defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        svg.insertBefore(defs, svg.firstChild);
+      }
+
+      defs.innerHTML = `
+        <radialGradient id="grad-fresh" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FF2D55" stop-opacity="0.85" />
+          <stop offset="45%" stop-color="#FF5E00" stop-opacity="0.55" />
+          <stop offset="85%" stop-color="#FF9500" stop-opacity="0.25" />
+          <stop offset="100%" stop-color="#FF2D55" stop-opacity="0.0" />
+        </radialGradient>
+
+        <radialGradient id="grad-recent" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FF9500" stop-opacity="0.75" />
+          <stop offset="50%" stop-color="#FF2D55" stop-opacity="0.35" />
+          <stop offset="85%" stop-color="#FF9500" stop-opacity="0.15" />
+          <stop offset="100%" stop-color="#FF9500" stop-opacity="0.0" />
+        </radialGradient>
+
+        <radialGradient id="grad-past" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#5856D6" stop-opacity="0.55" />
+          <stop offset="60%" stop-color="#5856D6" stop-opacity="0.20" />
+          <stop offset="100%" stop-color="#5856D6" stop-opacity="0.0" />
+        </radialGradient>
+      `;
+    } catch (e) {
+      // Ignore
+    }
+  };
 
   const initMap = () => {
     if (!window.L || mapInstanceRef.current) return;
@@ -117,9 +176,9 @@ export default function SightingMap() {
     });
 
     mapInstanceRef.current = map;
+    injectSvgGradients(map);
   };
 
-  // Switch Satellite vs Light Tile Layers
   useEffect(() => {
     if (mapInstanceRef.current && window.L) {
       if (tileLayerRef.current) {
@@ -133,7 +192,6 @@ export default function SightingMap() {
     }
   }, [mapStyle]);
 
-  // Fly Camera when Park Changes
   useEffect(() => {
     if (mapInstanceRef.current && PARK_COORDINATES[selectedPark]) {
       const coords = PARK_COORDINATES[selectedPark];
@@ -141,11 +199,14 @@ export default function SightingMap() {
     }
   }, [selectedPark]);
 
-  // Render Heatmap & Filter Sightings > 24 Hours
+  // Render Strong Multi-Stop SVG Heat Gradients with Mathematical Radius Scaling
   useEffect(() => {
     if (!window.L || !markersGroupRef.current) return;
 
     markersGroupRef.current.clearLayers();
+    if (mapInstanceRef.current) {
+      injectSvgGradients(mapInstanceRef.current);
+    }
 
     const now = Date.now();
 
@@ -161,28 +222,39 @@ export default function SightingMap() {
       const createdAtMs = s.createdAt?.seconds ? s.createdAt.seconds * 1000 : now;
       const hoursAgo = (now - createdAtMs) / (1000 * 60 * 60);
 
-      const coreColor = hoursAgo < 2 ? "rgba(255, 45, 85, 0.75)" : hoursAgo < 12 ? "rgba(255, 122, 0, 0.65)" : "rgba(88, 86, 214, 0.45)";
-      const outerColor = hoursAgo < 2 ? "rgba(255, 94, 0, 0.25)" : hoursAgo < 12 ? "rgba(255, 180, 0, 0.2)" : "rgba(88, 86, 214, 0.1)";
+      // MATHEMATICAL TIGER MOVEMENT AREA RADIUS:
+      // < 2h: 1,200m radius (~4.5 sq km immediate search area)
+      // 2-12h: 3,800m radius (~45.3 sq km core territory roaming range)
+      // 12-24h: 8,500m radius (~226.9 sq km full reserve range)
+      let radiusMeters = 1200;
+      let fillGradUrl = "url(#grad-fresh)";
+      let strokeColor = "#FF2D55";
 
-      const heatIcon = window.L.divIcon({
-        className: "custom-radial-heat-glow",
-        html: `
-          <div style="
-            width: 140px; 
-            height: 140px; 
-            margin-left: -70px; 
-            margin-top: -70px; 
-            border-radius: 50%; 
-            background: radial-gradient(circle, ${coreColor} 0%, ${outerColor} 50%, rgba(0,0,0,0) 100%);
-            pointer-events: none;
-            filter: blur(2px);
-          "></div>
-        `,
-        iconSize: [0, 0],
-        iconAnchor: [0, 0]
-      });
+      if (hoursAgo >= 2 && hoursAgo < 12) {
+        radiusMeters = 3800;
+        fillGradUrl = "url(#grad-recent)";
+        strokeColor = "#FF9500";
+      } else if (hoursAgo >= 12) {
+        radiusMeters = 8500;
+        fillGradUrl = "url(#grad-past)";
+        strokeColor = "#5856D6";
+      }
 
-      const pinColor = hoursAgo < 2 ? "#FF2D55" : hoursAgo < 12 ? "#FF7A00" : "#5856D6";
+      // 1. Strong Gradient Circle Scaling Dynamically in Meters on Earth
+      const circle = window.L.circle([s.lat, s.lng], {
+        radius: radiusMeters,
+        fillColor: strokeColor,
+        fillOpacity: hoursAgo < 2 ? 0.75 : hoursAgo < 12 ? 0.50 : 0.30,
+        color: strokeColor,
+        weight: 1.5,
+        opacity: 0.85
+      }).addTo(markersGroupRef.current);
+
+      if (circle._path) {
+        circle._path.setAttribute("fill", fillGradUrl);
+      }
+
+      // 2. Tiger Pin Badge
       const tigerPinIcon = window.L.divIcon({
         className: "custom-tiger-pin",
         html: `
@@ -193,12 +265,12 @@ export default function SightingMap() {
             margin-left: -14px;
             margin-top: -14px;
             background: #000000;
-            border: 2px solid ${pinColor};
+            border: 2px solid ${strokeColor};
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 15px ${pinColor};
+            box-shadow: 0 0 15px ${strokeColor};
             cursor: pointer;
           ">
             <span style="font-size: 14px;">🐅</span>
@@ -208,11 +280,9 @@ export default function SightingMap() {
         iconAnchor: [14, 14]
       });
 
-      window.L.marker([s.lat, s.lng], { icon: heatIcon, interactive: false }).addTo(markersGroupRef.current);
-
       const popupContent = `
         <div style="font-family: Arial, sans-serif; padding: 6px; color: #000;">
-          <strong style="color: ${pinColor}; font-size: 13px;">🐅 Tiger Sighting</strong><br/>
+          <strong style="color: ${strokeColor}; font-size: 13px;">🐅 Tiger Sighting</strong><br/>
           <span style="font-size: 11px; font-weight: bold;">${s.description || "Royal Bengal Tiger"}</span><br/>
           <span style="font-size: 10px; color: #666;">Zone: ${s.zone_name || "Core Zone"} (${s.safari_slot || "Morning"})</span><br/>
           <span style="font-size: 9px; color: #888;">Reported: ${Math.round(hoursAgo)}h ago by ${s.user_name || "Guest"}</span>
@@ -365,7 +435,7 @@ export default function SightingMap() {
         </div>
       </div>
 
-      {/* Park Selector Tabs & Satellite View Toggle */}
+      {/* Park Selector Tabs & Controls Bar */}
       <div className="flex flex-wrap justify-between items-center gap-3 bg-zinc-950 p-3 rounded-2xl border border-white/10">
         <div className="flex flex-wrap gap-1.5">
           {Object.keys(PARK_COORDINATES).map((park) => (
@@ -386,16 +456,29 @@ export default function SightingMap() {
           ))}
         </div>
 
-        {/* 1-Click Satellite Toggle */}
-        <button
-          onClick={() => {
-            triggerHaptic(12);
-            setMapStyle(mapStyle === "satellite" ? "light" : "satellite");
-          }}
-          className="bg-zinc-900 hover:bg-zinc-800 border border-orange-500/40 text-orange-400 font-extrabold px-4 py-2 rounded-full text-xs transition-all flex items-center gap-1.5 shadow-lg active:scale-95 ml-auto"
-        >
-          <Globe className="w-4 h-4" /> {mapStyle === "satellite" ? "🛰️ Satellite View" : "🗺️ Light Map"}
-        </button>
+        <div className="flex items-center gap-2 ml-auto">
+          {/* Instant Manual Refresh Button */}
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="bg-zinc-900 hover:bg-zinc-800 border border-white/15 text-white font-bold px-3.5 py-2 rounded-full text-xs transition-all flex items-center gap-1.5 shadow-lg active:scale-95 disabled:opacity-50"
+            title="Re-synchronize Cloud Firestore Sightings"
+          >
+            <RotateCw className={`w-3.5 h-3.5 text-orange-500 ${isRefreshing ? "animate-spin" : ""}`} />
+            <span>{isRefreshing ? "Syncing..." : "Refresh"}</span>
+          </button>
+
+          {/* 1-Click Satellite Toggle */}
+          <button
+            onClick={() => {
+              triggerHaptic(12);
+              setMapStyle(mapStyle === "satellite" ? "light" : "satellite");
+            }}
+            className="bg-zinc-900 hover:bg-zinc-800 border border-orange-500/40 text-orange-400 font-extrabold px-3.5 py-2 rounded-full text-xs transition-all flex items-center gap-1.5 shadow-lg active:scale-95"
+          >
+            <Globe className="w-3.5 h-3.5" /> {mapStyle === "satellite" ? "Satellite" : "Light Map"}
+          </button>
+        </div>
       </div>
 
       {/* Map Container */}
@@ -403,13 +486,19 @@ export default function SightingMap() {
         <div id="tiger-sightings-map" className="w-full h-[520px] z-10" />
 
         <div className="absolute top-4 left-4 z-20 bg-black/90 backdrop-blur-md border border-white/10 p-3.5 rounded-2xl text-xs text-white max-w-xs space-y-2">
-          <p className="font-extrabold text-orange-400 flex items-center gap-1">
-            <Flame className="w-4 h-4 text-orange-500" /> Click Map, Live GPS, or Photo
-          </p>
+          <div className="flex justify-between items-center">
+            <p className="font-extrabold text-orange-400 flex items-center gap-1">
+              <Flame className="w-4 h-4 text-orange-500" /> Live Heat Map
+            </p>
+            <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> {lastUpdatedText}
+            </span>
+          </div>
+
           <div className="flex flex-col gap-1 text-[11px] font-semibold pt-1 border-t border-white/10">
-            <span className="flex items-center gap-1.5 text-red-400"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Fresh Sighting (&lt; 2h ago)</span>
-            <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Recent Sighting (2 - 12h ago)</span>
-            <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Past Sighting (&lt; 24h ago)</span>
+            <span className="flex items-center gap-1.5 text-red-400"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Fresh Sighting (&lt; 2h ago • 1.2km)</span>
+            <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Recent Sighting (2-12h ago • 3.8km)</span>
+            <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Past Range (&lt; 24h ago • 8.5km)</span>
           </div>
         </div>
       </div>
