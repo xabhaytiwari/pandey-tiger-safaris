@@ -13,8 +13,8 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #070907;
-    color: #f4f4f5;
+    background-color: #000000;
+    color: #ffffff;
   }
 
   /* GPU Hardware Acceleration for 120Hz Smoothness */
@@ -23,20 +23,30 @@
     will-change: transform, opacity;
     backface-visibility: hidden;
   }
+}
 
-  /* Custom Editorial Scrollbar */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+/* Cohesive Design Token System */
+@layer components {
+  /* Cards & Containers: 24px Radius */
+  .card-standard {
+    @apply bg-zinc-950 border border-white/10 rounded-3xl backdrop-blur-xl transition-all shadow-2xl;
   }
-  ::-webkit-scrollbar-track {
-    background: #070907;
+  
+  .card-standard:hover {
+    @apply border-orange-500/40 shadow-orange-500/10;
   }
-  ::-webkit-scrollbar-thumb {
-    background: #27272a;
-    border-radius: 9999px;
+
+  /* Buttons & Inputs: 16px Radius */
+  .btn-primary {
+    @apply bg-orange-500 hover:bg-orange-400 text-black font-extrabold rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-orange-500/20 cursor-pointer;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #ff9a00;
+
+  .btn-secondary {
+    @apply bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-2xl border border-white/15 transition-all active:scale-[0.98] cursor-pointer;
+  }
+
+  /* Badges & Pills: Full Radius */
+  .pill-badge {
+    @apply rounded-full px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5;
   }
 }
