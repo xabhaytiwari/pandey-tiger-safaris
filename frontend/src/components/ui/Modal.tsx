@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import { triggerHaptic } from "../../lib/sound";
 
 interface ModalProps {
   isOpen: boolean;
@@ -27,7 +26,6 @@ export default function Modal({
     setMounted(true);
   }, []);
 
-  // Lock background scroll when modal is active
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -42,37 +40,28 @@ export default function Modal({
   if (!mounted || typeof document === "undefined") return null;
 
   return createPortal(
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       {isOpen && (
-        <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-6 overflow-y-auto`}>
-          {/* Backdrop */}
+        <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 sm:p-6 overflow-y-auto`}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={() => {
-              triggerHaptic(10);
-              onClose();
-            }}
+            onClick={onClose}
             className="fixed inset-0 bg-black/90 backdrop-blur-2xl cursor-pointer"
           />
 
-          {/* Scrollable Modal Card */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.94, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 10 }}
             transition={{ type: "spring", stiffness: 450, damping: 30 }}
-            className={`relative z-10 w-full ${maxWidth} max-h-[90vh] overflow-y-auto rounded-3xl bg-zinc-950 border border-white/15 text-left shadow-2xl text-white my-auto scrollbar-thin scrollbar-thumb-orange-500`}
+            className={`relative z-10 w-full ${maxWidth} max-h-[88vh] overflow-y-auto bg-zinc-950 border border-white/15 rounded-3xl text-left shadow-2xl text-white my-auto`}
           >
-            {/* Close Button */}
             <button
               type="button"
-              onClick={() => {
-                triggerHaptic(10);
-                onClose();
-              }}
+              onClick={onClose}
               className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-black p-2.5 rounded-full text-white hover:text-orange-400 border border-white/10 active:scale-95 transition-all cursor-pointer"
             >
               <X className="w-5 h-5" />

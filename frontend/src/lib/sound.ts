@@ -1,4 +1,3 @@
-// Singleton AudioContext Instance
 let globalAudioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
@@ -15,50 +14,33 @@ function getAudioContext(): AudioContext | null {
   return globalAudioCtx;
 }
 
-// Organic Low-Pass Filtered Velvet Acoustic Tap
-function playOrganicAcousticClick(isTypewriter: boolean = false) {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  try {
-    const now = ctx.currentTime;
-
-    // 1. Organic Sine Oscillator
-    const osc = ctx.createOscillator();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(isTypewriter ? 220 : 180, now);
-    osc.frequency.exponentialRampToValueAtTime(55, now + 0.025);
-
-    // 2. Biquad Low-Pass Filter (Removes harsh metallic highs -> creates warm wood/velvet thock)
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(800, now);
-    filter.Q.setValueAtTime(1, now);
-
-    // 3. Whisper-Quiet Gain Envelope (0.015 - 0.025 volume)
-    const gain = ctx.createGain();
-    const volume = isTypewriter ? 0.015 : 0.025;
-    gain.gain.setValueAtTime(volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.025);
-
-    // Signal Chain: Oscillator -> LowPass Filter -> Gain -> Speakers
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + 0.025);
-  } catch (e) {
-    // Ignore autoplay restrictions
-  }
-}
-
 class TypewriterSound {
   private isMuted: boolean = false;
 
   playClick() {
     if (this.isMuted) return;
-    playOrganicAcousticClick(true);
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(850 + Math.random() * 250, now);
+
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } catch {
+      // Fail-safe catch
+    }
   }
 
   toggleMute() {
@@ -69,36 +51,59 @@ class TypewriterSound {
 
 export const typewriterSound = new TypewriterSound();
 
-// Universal Haptic & Organic Click Helper
 export const triggerHaptic = (type: "light" | "medium" | "heavy" = "light") => {
-  if (typeof window === "undefined") return;
+  try {
+    if (typeof window === "undefined") return;
 
-  // 1. Android Hardware Vibration
-  if ("vibrate" in navigator) {
-    try {
-      const duration = type === "heavy" ? 25 : type === "medium" ? 18 : 10;
-      navigator.vibrate(duration);
-    } catch {
-      // Ignore
+    if ("vibrate" in navigator) {
+      try {
+        const duration = type === "heavy" ? 25 : type === "medium" ? 18 : 10;
+        navigator.vibrate(duration);
+      } catch {
+        // Ignore
+      }
     }
-  }
 
-  // 2. Organic Low-Pass Acoustic Tap
-  playOrganicAcousticClick(false);
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(1200, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.015);
+
+    const volume = type === "heavy" ? 0.08 : type === "medium" ? 0.05 : 0.03;
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.015);
+  } catch {
+    // Fail-safe catch so user actions NEVER break
+  }
 };
 
-// Global Event Delegator for Buttons and Links
 if (typeof window !== "undefined") {
   const handleGlobalClick = (e: Event) => {
-    const target = e.target as HTMLElement | null;
-    if (!target) return;
+    try {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
 
-    const interactive = target.closest(
-      "button, a, select, option, input[type='button'], input[type='submit'], input[type='checkbox'], [role='button'], [data-haptic]"
-    );
+      const interactive = target.closest(
+        "button, a, select, option, input[type='button'], input[type='submit'], input[type='checkbox'], [role='button'], [data-haptic]"
+      );
 
-    if (interactive) {
-      triggerHaptic("light");
+      if (interactive) {
+        triggerHaptic("light");
+      }
+    } catch {
+      // Ignore
     }
   };
 
