@@ -224,7 +224,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
       }
     } catch (err) {
       console.error("Payment error:", err);
-    } fontally {
+    } finally {
       setPaymentLoading(false);
     }
   };
