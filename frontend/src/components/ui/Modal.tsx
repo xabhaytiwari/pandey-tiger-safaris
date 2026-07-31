@@ -27,45 +27,30 @@ export default function Modal({
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
   if (!mounted || typeof document === "undefined") return null;
 
   return createPortal(
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div key="modal-root" className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 sm:p-6 overflow-y-auto`}>
-          {/* Backdrop */}
-          <motion.div
+        <div key="modal-wrapper-div" className={`fixed inset-0 ${zIndex} overflow-y-auto bg-black/85 backdrop-blur-xl p-4 flex items-center justify-center min-h-screen`}>
+          {/* Backdrop Click Dismiss */}
+          <div
             key="modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
             onClick={() => {
               triggerHaptic(10);
               onClose();
             }}
-            className="fixed inset-0 bg-black/90 backdrop-blur-2xl cursor-pointer"
+            className="fixed inset-0 z-0 cursor-pointer"
           />
 
-          {/* Modal Card */}
+          {/* Modal Card - Scrollable */}
           <motion.div
-            key="modal-card"
-            initial={{ opacity: 0, scale: 0.95, y: 0 }}
+            key="modal-card-body"
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ type: "spring", stiffness: 450, damping: 30 }}
-            className={`relative z-10 w-full ${maxWidth} max-h-[88vh] overflow-y-auto bg-zinc-950 border border-white/15 rounded-3xl text-left shadow-2xl text-white my-auto`}
+            className={`relative z-10 w-full ${maxWidth} max-h-[88vh] overflow-y-auto rounded-3xl bg-zinc-950 border border-white/15 text-left shadow-2xl text-white my-auto p-1`}
           >
             <button
               type="button"
