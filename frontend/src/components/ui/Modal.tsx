@@ -27,6 +27,7 @@ export default function Modal({
     setMounted(true);
   }, []);
 
+  // Lock background scroll when modal is active
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -43,7 +44,8 @@ export default function Modal({
   return createPortal(
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4`}>
+        <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-6 overflow-y-auto`}>
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -56,13 +58,15 @@ export default function Modal({
             className="fixed inset-0 bg-black/90 backdrop-blur-2xl cursor-pointer"
           />
 
+          {/* Scrollable Modal Card */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 450, damping: 30 }}
-            className={`relative z-10 w-full ${maxWidth} max-h-[85vh] overflow-y-auto bg-zinc-950 border border-white/15 rounded-3xl text-left shadow-2xl text-white my-auto`}
+            className={`relative z-10 w-full ${maxWidth} max-h-[90vh] overflow-y-auto rounded-3xl bg-zinc-950 border border-white/15 text-left shadow-2xl text-white my-auto scrollbar-thin scrollbar-thumb-orange-500`}
           >
+            {/* Close Button */}
             <button
               type="button"
               onClick={() => {

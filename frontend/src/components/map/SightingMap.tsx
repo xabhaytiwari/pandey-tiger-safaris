@@ -5,7 +5,7 @@ import { db, auth, onAuthStateChanged } from "../../lib/firebase";
 import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { getExifGPS, findNearestPark } from "../../lib/exif";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Sparkles, X, CheckCircle2, Flame, Upload, Navigation, Crosshair } from "lucide-react";
+import { MapPin, Sparkles, X, CheckCircle2, Flame, Upload, Navigation, Crosshair, Globe } from "lucide-react";
 import { triggerHaptic } from "../../lib/sound";
 import AuthModal from "../auth/AuthModal";
 
@@ -23,13 +23,16 @@ const PARK_COORDINATES: Record<string, { lat: number; lng: number; zoom: number 
   "Satpura National Park": { lat: 22.4833, lng: 78.4333, zoom: 11 },
 };
 
+const SATELLITE_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const LIGHT_TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+
 export default function SightingMap() {
   const [selectedPark, setSelectedPark] = useState("Bandhavgarh National Park");
   const [sightings, setSightings] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [mapStyle, setMapStyle] = useState<"satellite" | "light">("satellite"); // Default to Satellite
 
-  // Sighting Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLatLng, setSelectedLatLng] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsDetected, setGpsDetected] = useState(false);
@@ -45,6 +48,7 @@ export default function SightingMap() {
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
 
   const mapInstanceRef = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
   const markersGroupRef = useRef<any>(null);
 
   useEffect(() => {
@@ -54,7 +58,6 @@ export default function SightingMap() {
     return () => unsub();
   }, []);
 
-  // Real-time Firestore sync
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "sightings"), (snapshot) => {
       const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -85,7 +88,6 @@ export default function SightingMap() {
     }
   }, []);
 
-  // Initialize Map with Clean White Tiles
   const initMap = () => {
     if (!window.L || mapInstanceRef.current) return;
 
@@ -97,9 +99,10 @@ export default function SightingMap() {
       zoomControl: true,
     });
 
-    // Clean White OpenStreetMap (CartoDB Positron)
-    window.L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    const tileUrl = mapStyle === "satellite" ? SATELLITE_TILE_URL : LIGHT_TILE_URL;
+
+    tileLayerRef.current = window.L.tileLayer(tileUrl, {
+      attribution: mapStyle === "satellite" ? "Tiles &copy; Esri &mdash; Source: Esri, Maxar" : "&copy; OpenStreetMap",
       maxZoom: 18,
     }).addTo(map);
 
@@ -116,6 +119,20 @@ export default function SightingMap() {
     mapInstanceRef.current = map;
   };
 
+  // Switch Satellite vs Light Tile Layers
+  useEffect(() => {
+    if (mapInstanceRef.current && window.L) {
+      if (tileLayerRef.current) {
+        mapInstanceRef.current.removeLayer(tileLayerRef.current);
+      }
+      const tileUrl = mapStyle === "satellite" ? SATELLITE_TILE_URL : LIGHT_TILE_URL;
+      tileLayerRef.current = window.L.tileLayer(tileUrl, {
+        attribution: mapStyle === "satellite" ? "Tiles &copy; Esri &mdash; Source: Esri, Maxar" : "&copy; OpenStreetMap",
+        maxZoom: 18,
+      }).addTo(mapInstanceRef.current);
+    }
+  }, [mapStyle]);
+
   // Fly Camera when Park Changes
   useEffect(() => {
     if (mapInstanceRef.current && PARK_COORDINATES[selectedPark]) {
@@ -124,7 +141,7 @@ export default function SightingMap() {
     }
   }, [selectedPark]);
 
-  // Render Blended Radial Gradient Heat Map & Filter Sightings > 24 Hours
+  // Render Heatmap & Filter Sightings > 24 Hours
   useEffect(() => {
     if (!window.L || !markersGroupRef.current) return;
 
@@ -132,24 +149,21 @@ export default function SightingMap() {
 
     const now = Date.now();
 
-    // 1. Filter out sightings older than 24 hours (86,400,000 ms)
     const validSightings = sightings.filter((s) => {
       if (!s.lat || !s.lng) return false;
       const parkMatches = !s.park_name || s.park_name === selectedPark;
       const createdAtMs = s.createdAt?.seconds ? s.createdAt.seconds * 1000 : now;
       const hoursAgo = (now - createdAtMs) / (1000 * 60 * 60);
-      return parkMatches && hoursAgo <= 24; // Exclude sightings older than 24h
+      return parkMatches && hoursAgo <= 24;
     });
 
-    // 2. Render Soft Radial Gradient Auras for Seamless Heat Blending
     validSightings.forEach((s) => {
       const createdAtMs = s.createdAt?.seconds ? s.createdAt.seconds * 1000 : now;
       const hoursAgo = (now - createdAtMs) / (1000 * 60 * 60);
 
-      const coreColor = hoursAgo < 2 ? "rgba(255, 45, 85, 0.7)" : hoursAgo < 12 ? "rgba(255, 122, 0, 0.6)" : "rgba(88, 86, 214, 0.4)";
+      const coreColor = hoursAgo < 2 ? "rgba(255, 45, 85, 0.75)" : hoursAgo < 12 ? "rgba(255, 122, 0, 0.65)" : "rgba(88, 86, 214, 0.45)";
       const outerColor = hoursAgo < 2 ? "rgba(255, 94, 0, 0.25)" : hoursAgo < 12 ? "rgba(255, 180, 0, 0.2)" : "rgba(88, 86, 214, 0.1)";
 
-      // Soft Borderless Radial Gradient Icon
       const heatIcon = window.L.divIcon({
         className: "custom-radial-heat-glow",
         html: `
@@ -168,7 +182,6 @@ export default function SightingMap() {
         iconAnchor: [0, 0]
       });
 
-      // Sleek Tiger Marker Badge
       const pinColor = hoursAgo < 2 ? "#FF2D55" : hoursAgo < 12 ? "#FF7A00" : "#5856D6";
       const tigerPinIcon = window.L.divIcon({
         className: "custom-tiger-pin",
@@ -195,7 +208,6 @@ export default function SightingMap() {
         iconAnchor: [14, 14]
       });
 
-      // Add Radial Gradient Aura + Pin Marker
       window.L.marker([s.lat, s.lng], { icon: heatIcon, interactive: false }).addTo(markersGroupRef.current);
 
       const popupContent = `
@@ -211,7 +223,6 @@ export default function SightingMap() {
     });
   }, [sightings, selectedPark]);
 
-  // LIVE SATELLITE GPS
   const handleDetectLiveGps = () => {
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
       alert("Satellite Geolocation is not supported by your browser.");
@@ -251,7 +262,6 @@ export default function SightingMap() {
     );
   };
 
-  // PHOTO EXIF GPS
   const handlePhotoAutoMark = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -355,28 +365,41 @@ export default function SightingMap() {
         </div>
       </div>
 
-      {/* Park Selector Tabs */}
-      <div className="flex flex-wrap justify-center gap-2">
-        {Object.keys(PARK_COORDINATES).map((park) => (
-          <button
-            key={park}
-            onClick={() => {
-              triggerHaptic(10);
-              setSelectedPark(park);
-            }}
-            className={`px-5 py-2.5 rounded-full text-xs font-extrabold transition-all active:scale-95 flex items-center gap-1.5 ${
-              selectedPark === park
-                ? "bg-orange-500 text-black shadow-lg shadow-orange-500/25"
-                : "bg-zinc-950 border border-white/10 text-zinc-400 hover:text-white"
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5" /> {park}
-          </button>
-        ))}
+      {/* Park Selector Tabs & Satellite View Toggle */}
+      <div className="flex flex-wrap justify-between items-center gap-3 bg-zinc-950 p-3 rounded-2xl border border-white/10">
+        <div className="flex flex-wrap gap-1.5">
+          {Object.keys(PARK_COORDINATES).map((park) => (
+            <button
+              key={park}
+              onClick={() => {
+                triggerHaptic(10);
+                setSelectedPark(park);
+              }}
+              className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all active:scale-95 flex items-center gap-1.5 ${
+                selectedPark === park
+                  ? "bg-orange-500 text-black shadow-lg shadow-orange-500/25"
+                  : "bg-black border border-white/10 text-zinc-400 hover:text-white"
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" /> {park}
+            </button>
+          ))}
+        </div>
+
+        {/* 1-Click Satellite Toggle */}
+        <button
+          onClick={() => {
+            triggerHaptic(12);
+            setMapStyle(mapStyle === "satellite" ? "light" : "satellite");
+          }}
+          className="bg-zinc-900 hover:bg-zinc-800 border border-orange-500/40 text-orange-400 font-extrabold px-4 py-2 rounded-full text-xs transition-all flex items-center gap-1.5 shadow-lg active:scale-95 ml-auto"
+        >
+          <Globe className="w-4 h-4" /> {mapStyle === "satellite" ? "🛰️ Satellite View" : "🗺️ Light Map"}
+        </button>
       </div>
 
-      {/* Clean White Map Container */}
-      <div className="relative bg-white border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
+      {/* Map Container */}
+      <div className="relative bg-black border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
         <div id="tiger-sightings-map" className="w-full h-[520px] z-10" />
 
         <div className="absolute top-4 left-4 z-20 bg-black/90 backdrop-blur-md border border-white/10 p-3.5 rounded-2xl text-xs text-white max-w-xs space-y-2">
@@ -399,7 +422,7 @@ export default function SightingMap() {
               initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.92 }}
-              className="bg-zinc-950 border border-white/15 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4"
+              className="bg-zinc-950 border border-white/15 w-full max-w-md rounded-3xl p-6 relative text-white shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto"
             >
               <button
                 onClick={() => setIsModalOpen(false)}
