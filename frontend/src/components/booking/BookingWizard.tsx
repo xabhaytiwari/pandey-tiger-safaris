@@ -7,7 +7,7 @@ import { auth, onAuthStateChanged } from "../../lib/firebase";
 import AuthModal from "../auth/AuthModal";
 import { 
   Calendar as CalendarIcon, CheckCircle2, MessageSquare, Phone, CreditCard, ShieldCheck, 
-  Users, Upload, Globe, User, MapPin, Info, Lock, LogIn, Sun, Sunset, Clock, AlertTriangle
+  Users, Upload, Globe, User, MapPin, Info, Lock, LogIn, Sun, Sunset, Clock, AlertTriangle, UserCheck
 } from "lucide-react";
 
 declare global {
@@ -16,17 +16,29 @@ declare global {
   }
 }
 
-export default function BookingWizard({ packages = [], cars = [], initialPark }: any) {
+interface Passenger {
+  name: string;
+  age: string;
+  gender: string;
+  passport_base64?: string;
+}
+
+export default function BookingWizard({ packages = [], cars = [] }: any) {
   const [step, setStep] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const [parks, setParks] = useState<any[]>([]);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
-  const [selectedParkName, setSelectedParkName] = useState<string>(initialPark || "Bandhavgarh National Park");
+  const [selectedParkName, setSelectedParkName] = useState<string>("Bandhavgarh National Park");
+
+  // Dynamic Passenger State
+  const [passengers, setPassengers] = useState<Passenger[]>([
+    { name: "", age: "30", gender: "Male" }
+  ]);
 
   const [formData, setFormData] = useState({
-    park_name: initialPark || "Bandhavgarh National Park",
+    park_name: "Bandhavgarh National Park",
     package_id: packages[0]?.id || "",
     car_id: cars[0]?.id || "",
     booking_date: new Date().toISOString().split("T")[0],
@@ -34,10 +46,10 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
     customer_name: "",
     customer_email: "",
     customer_phone: "",
-    guests_count: 2,
+    guests_count: 1,
     nationality: "Indian",
     id_proof_type: "Aadhaar Card",
-    id_proof_base64: "",
+    primary_aadhaar_base64: "",
     payment_type: "Advance Paid",
     agreed_to_terms: false,
   });
@@ -46,12 +58,47 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
-  useEffect(() => {
-    if (initialPark) {
-      setSelectedParkName(initialPark);
-      setFormData((prev) => ({ ...prev, park_name: initialPark }));
+  // Sync passenger count array when guests_count changes
+  const handleGuestCountChange = (count: number) => {
+    setFormData((prev) => ({ ...prev, guests_count: count }));
+    setPassengers((prev) => {
+      const updated = [...prev];
+      while (updated.length < count) {
+        updated.push({ name: "", age: "25", gender: "Male" });
+      }
+      return updated.slice(0, count);
+    });
+  };
+
+  const updatePassengerField = (index: number, field: string, value: string) => {
+    setPassengers((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handlePassengerPassportUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updatePassengerField(index, "passport_base64", reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }, [initialPark]);
+  };
+
+  const handlePrimaryAadhaarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, primary_aadhaar_base64: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     async function loadInitialData() {
@@ -134,17 +181,6 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
 
   const availableDatesList = get365AvailableDates();
 
-  const handleIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, id_proof_base64: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleConfirmAndPay = async () => {
     if (!currentUser) {
       setIsAuthModalOpen(true);
@@ -156,6 +192,20 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
       return;
     }
 
+    // Verify ID Uploads
+    if (formData.nationality === "Indian" && !formData.primary_aadhaar_base64) {
+      alert("Please upload Primary Traveler's Aadhaar Card copy.");
+      return;
+    }
+
+    if (formData.nationality === "Non-Indian") {
+      const missingPassport = passengers.some((p) => !p.passport_base64);
+      if (missingPassport) {
+        alert("As per Forest Department rules, Passport copies are required for ALL foreign passengers.");
+        return;
+      }
+    }
+
     setPaymentLoading(true);
     try {
       const res = await fetch("/api/payment/create-order", {
@@ -163,7 +213,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount_inr: payableAmount,
-          booking_id: formData.customer_name + "_" + Date.now(),
+          booking_id: (passengers[0]?.name || "Guest") + "_" + Date.now(),
         }),
       });
       const orderData = await res.json();
@@ -178,6 +228,8 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
         handler: async function (response: any) {
           await submitBooking({
             ...formData,
+            customer_name: passengers[0]?.name || formData.customer_name,
+            passengers: passengers,
             park_name: selectedParkName,
             package_title: selectedPkg.title,
             car_name: `${requiredVehicleCount}x ${selectedCarName}`,
@@ -193,7 +245,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
           setSubmitted(true);
         },
         prefill: {
-          name: formData.customer_name,
+          name: passengers[0]?.name || formData.customer_name,
           email: formData.customer_email,
           contact: formData.customer_phone,
         },
@@ -208,6 +260,8 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
       } else {
         await submitBooking({
           ...formData,
+          customer_name: passengers[0]?.name || formData.customer_name,
+          passengers: passengers,
           park_name: selectedParkName,
           package_title: selectedPkg.title,
           car_name: `${requiredVehicleCount}x ${selectedCarName}`,
@@ -233,10 +287,10 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
     `*NEW PREPAID SAFARI BOOKING*\n\n` +
     `*Park:* ${selectedParkName}\n` +
     `*Slot:* ${formData.safari_slot}\n` +
-    `*Guest:* ${formData.customer_name}\n` +
+    `*Primary Guest:* ${passengers[0]?.name || formData.customer_name}\n` +
     `*Phone:* ${formData.customer_phone}\n` +
     `*Travelers:* ${formData.guests_count} Persons\n` +
-    `*Nationality:* ${formData.nationality} (${formData.id_proof_type})\n` +
+    `*Nationality:* ${formData.nationality}\n` +
     `*Package:* ${selectedPkg.title}\n` +
     `*Vehicle:* ${requiredVehicleCount}x ${selectedCarName}\n` +
     `*Date:* ${formData.booking_date}\n` +
@@ -249,7 +303,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
     <section id="booking" className="py-12 bg-black text-white">
       <div className="max-w-3xl mx-auto bg-zinc-950 border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl backdrop-blur-md">
         <h2 className="text-3xl font-extrabold text-center text-white mb-2">Prepaid Safari Booking</h2>
-        <p className="text-zinc-400 text-center text-sm mb-8">Official park permits reserved strictly upon ID verification & prepayment</p>
+        <p className="text-zinc-400 text-center text-sm mb-8">Official park permits reserved strictly upon passenger ID verification & prepayment</p>
 
         {!currentUser && (
           <div className="bg-orange-500/10 border border-orange-500/40 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -280,7 +334,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
         <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4 text-xs font-semibold uppercase tracking-wider">
           <span className={step >= 1 ? "text-orange-500 font-bold" : "text-zinc-600"}>1. Park & Vehicle</span>
           <span className={step >= 2 ? "text-orange-500 font-bold" : "text-zinc-600"}>2. Date & Plan</span>
-          <span className={step >= 3 ? "text-orange-500 font-bold" : "text-zinc-600"}>3. ID Proof & Pay</span>
+          <span className={step >= 3 ? "text-orange-500 font-bold" : "text-zinc-600"}>3. Passenger Details & IDs</span>
         </div>
 
         {submitted ? (
@@ -289,7 +343,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
             <div className="space-y-2">
               <h3 className="text-2xl font-bold text-white">Booking Confirmed & Paid!</h3>
               <p className="text-zinc-400 text-sm max-w-md mx-auto">
-                Park: <strong>{selectedParkName}</strong> | Vehicles: <strong>{requiredVehicleCount}x {selectedCarName}</strong>
+                Park: <strong>{selectedParkName}</strong> | Primary Guest: <strong>{passengers[0]?.name}</strong> ({formData.guests_count} Travelers)
               </p>
               <div className="bg-zinc-900 p-4 rounded-2xl border border-white/10 max-w-md mx-auto text-xs space-y-1">
                 <p className="text-emerald-400 font-bold">Amount Paid Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
@@ -400,14 +454,15 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                     </div>
                   )}
 
+                  {/* Number of Guests */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-orange-500" /> Number of Travelers (Persons)
                     </label>
                     <select
                       value={formData.guests_count}
-                      onChange={(e) => setFormData({ ...formData, guests_count: Number(e.target.value) })}
-                      className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
+                      onChange={(e) => handleGuestCountChange(Number(e.target.value))}
+                      className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm font-bold"
                     >
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
                         <option key={num} value={num} className="bg-zinc-900">{num} {num === 1 ? "Person" : "Persons"}</option>
@@ -426,17 +481,6 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                         <option key={car.id} value={car.id} className="bg-zinc-900">{car.name} ({car.category})</option>
                       ))}
                     </select>
-
-                    {requiredVehicleCount > 1 ? (
-                      <div className="mt-2 text-xs text-orange-400 bg-orange-500/10 border border-orange-500/30 p-3 rounded-xl flex items-center gap-2 font-bold">
-                        <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                        <span>{formData.guests_count} Travelers require {requiredVehicleCount}x {selectedCarName}s to comfortably accommodate your party.</span>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1 font-medium">
-                        <Info className="w-3.5 h-3.5" /> * Vehicle models shown in fleet are representative
-                      </p>
-                    )}
                   </div>
 
                   <button type="button" onClick={() => setStep(2)} className="w-full bg-orange-500 text-black font-extrabold py-3.5 rounded-xl transition-all text-sm hover:bg-orange-400">
@@ -500,41 +544,37 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                   <div className="flex gap-4">
                     <button type="button" onClick={() => setStep(1)} className="w-1/2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 py-3.5 rounded-xl text-sm font-semibold">Back</button>
                     <button type="button" onClick={() => setStep(3)} disabled={!formData.booking_date} className="w-1/2 bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm disabled:opacity-50">
-                      Next: ID Proof & Terms &rarr;
+                      Next: Passenger Details & ID &rarr;
                     </button>
                   </div>
                 </motion.div>
               )}
 
               {step === 3 && (
-                <motion.div key="step3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    required
-                    value={formData.customer_name}
-                    onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
-                    className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email Address"
-                    required
-                    value={formData.customer_email}
-                    onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
-                    className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Phone Number (e.g. 9876543210)"
-                    required
-                    value={formData.customer_phone}
-                    onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
-                    className="w-full bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-sm"
-                  />
+                <motion.div key="step3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
+                  {/* Contact Info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="email"
+                      placeholder="Contact Email"
+                      required
+                      value={formData.customer_email}
+                      onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
+                      className="bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-xs"
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Contact Phone (e.g. 9876543210)"
+                      required
+                      value={formData.customer_phone}
+                      onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
+                      className="bg-black border border-white/15 rounded-xl p-3.5 text-white focus:outline-none focus:border-orange-500 text-xs"
+                    />
+                  </div>
 
-                  <div className="pt-2 border-t border-white/10 space-y-3">
-                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nationality & Forest Permit ID Proof</label>
+                  {/* Nationality Toggle */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nationality Selection</label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
@@ -545,7 +585,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                             : "bg-black border-white/10 text-zinc-400"
                         }`}
                       >
-                        <Globe className="w-3.5 h-3.5" /> Indian (Aadhaar Card)
+                        <Globe className="w-3.5 h-3.5" /> Indian (Aadhaar)
                       </button>
 
                       <button
@@ -560,28 +600,85 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                         <Globe className="w-3.5 h-3.5" /> Non-Indian (Passport)
                       </button>
                     </div>
+                  </div>
 
-                    {formData.nationality === "Non-Indian" && (
-                      <p className="text-[11px] text-amber-400 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
-                        * Foreign national permit surcharge of ₹4,500/person included as per MP Forest Dept regulations.
-                      </p>
-                    )}
+                  {/* DYNAMIC PASSENGER INFORMATION LIST */}
+                  <div className="space-y-4 pt-2 border-t border-white/10">
+                    <label className="block text-xs font-semibold text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <UserCheck className="w-4 h-4 text-orange-500" /> Passenger Information ({passengers.length} Persons)
+                    </label>
 
+                    {passengers.map((p, idx) => (
+                      <div key={idx} className="bg-zinc-900 border border-white/10 rounded-2xl p-4 space-y-3">
+                        <p className="text-xs font-bold text-white flex items-center justify-between">
+                          <span>Passenger #{idx + 1} {idx === 0 ? "(Primary Traveler)" : ""}</span>
+                          <span className="text-[10px] text-zinc-500 font-mono">Person {idx + 1} of {passengers.length}</span>
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <input
+                            type="text"
+                            placeholder="Full Name"
+                            required
+                            value={p.name}
+                            onChange={(e) => updatePassengerField(idx, "name", e.target.value)}
+                            className="sm:col-span-1 bg-black border border-white/10 rounded-xl p-2.5 text-white text-xs"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Age"
+                            required
+                            value={p.age}
+                            onChange={(e) => updatePassengerField(idx, "age", e.target.value)}
+                            className="bg-black border border-white/10 rounded-xl p-2.5 text-white text-xs"
+                          />
+                          <select
+                            value={p.gender}
+                            onChange={(e) => updatePassengerField(idx, "gender", e.target.value)}
+                            className="bg-black border border-white/10 rounded-xl p-2.5 text-white text-xs"
+                          >
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+
+                        {/* IF FOREIGNER: Passport Copy required for EVERY passenger */}
+                        {formData.nationality === "Non-Indian" && (
+                          <div className="border border-dashed border-orange-500/30 p-3 rounded-xl space-y-1">
+                            <p className="text-[11px] text-orange-400 font-bold flex items-center gap-1">
+                              <Upload className="w-3.5 h-3.5" /> Upload Passport Copy for Passenger #{idx + 1}
+                            </p>
+                            <input
+                              type="file"
+                              accept="image/*,.pdf"
+                              required
+                              onChange={(e) => handlePassengerPassportUpload(idx, e)}
+                              className="block w-full text-[10px] text-zinc-400 file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:bg-orange-500 file:text-black file:font-bold"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* IF INDIAN: Primary Traveler's Aadhaar Card required */}
+                  {formData.nationality === "Indian" && (
                     <div className="border border-dashed border-white/20 p-4 rounded-xl text-center space-y-2">
                       <Upload className="w-6 h-6 text-orange-500 mx-auto" />
                       <p className="text-zinc-300 text-xs font-semibold">
-                        Upload {formData.nationality === "Indian" ? "Aadhaar Card" : "Passport"} Copy
+                        Upload Primary Traveler&apos;s Aadhaar Card Copy
                       </p>
-                      <p className="text-[10px] text-zinc-500">Required by Forest Department for Gate Entry Permits</p>
+                      <p className="text-[10px] text-zinc-500">Required for Forest Gate Entry Permit Issuance</p>
                       <input 
                         type="file" 
                         accept="image/*,.pdf" 
                         required 
-                        onChange={handleIdUpload} 
+                        onChange={handlePrimaryAadhaarUpload} 
                         className="block w-full text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:bg-orange-500 file:text-black file:font-bold hover:file:bg-orange-400 cursor-pointer" 
                       />
                     </div>
-                  </div>
+                  )}
 
                   <div className="pt-2 border-t border-white/10 flex items-start gap-3 bg-zinc-900/60 p-3.5 rounded-xl border border-white/10">
                     <input
@@ -599,9 +696,8 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                   <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-xl text-xs space-y-1">
                     <p className="font-bold text-white flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-orange-500" /> Payment Summary</p>
                     <p className="text-zinc-300">Park: {selectedParkName} | Slot: {formData.safari_slot}</p>
-                    <p className="text-zinc-300">Vehicles: {requiredVehicleCount}x {selectedCarName} ({formData.guests_count} Guests)</p>
+                    <p className="text-zinc-300">Travelers: {formData.guests_count} Persons ({formData.nationality})</p>
                     <p className="text-orange-400 font-bold">Payable Now: ₹{payableAmount.toLocaleString("en-IN")} ({formData.payment_type})</p>
-                    {balanceDueINR > 0 && <p className="text-amber-400 font-semibold">Balance Due on Arrival: ₹{balanceDueINR.toLocaleString("en-IN")}</p>}
                   </div>
 
                   <div className="flex gap-4 pt-2">
@@ -619,7 +715,7 @@ export default function BookingWizard({ packages = [], cars = [], initialPark }:
                       <button
                         type="button"
                         onClick={handleConfirmAndPay}
-                        disabled={paymentLoading || !formData.customer_name || !formData.customer_phone || !formData.id_proof_base64 || !formData.agreed_to_terms}
+                        disabled={paymentLoading || !passengers[0]?.name || !formData.customer_phone || !formData.agreed_to_terms}
                         className="w-1/2 bg-orange-500 text-black font-extrabold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-orange-400"
                       >
                         <CreditCard className="w-4 h-4" />

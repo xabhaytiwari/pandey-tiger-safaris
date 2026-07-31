@@ -6,7 +6,9 @@ import {
   deleteDoc,
   doc, 
   setDoc, 
-  serverTimestamp 
+  serverTimestamp,
+  updateDoc,
+  increment
 } from "firebase/firestore";
 
 const SEED_DATA = {
@@ -75,10 +77,7 @@ const SEED_DATA = {
   packages: [],
   drivers: [],
   blocked_dates: [],
-  reviews: [
-    { id: "rev_1", author: "Ananya Sharma", location: "Delhi, India", rating: 5, comment: "Dinesh Pandey (+91 9425331205) organized our entire package and provided the best forest guide. Top service!" },
-    { id: "rev_2", author: "Suresh Kothari", location: "Mumbai, India", rating: 5, comment: "Booked an Innova Crysta and complete tour with Dinesh Ji. Everything was seamless!" }
-  ],
+  reviews: [],
   contact: {
     hq_address: "Tala Gate Road, Near Bandhavgarh National Park, Umaria, MP - 484661",
     phone: "9425331205",
@@ -142,6 +141,33 @@ export async function submitBooking(payload: any) {
   }
 }
 
+// Create Social Safari Post in Firestore
+export async function createSocialPost(payload: any) {
+  try {
+    const docRef = await addDoc(collection(db, "posts"), {
+      ...payload,
+      likes_count: 0,
+      createdAt: serverTimestamp(),
+    });
+    return { status: "success", post_id: docRef.id };
+  } catch (error: any) {
+    return { status: "error", message: error.message };
+  }
+}
+
+// Toggle Post Likes
+export async function togglePostLike(postId: string) {
+  try {
+    const postRef = doc(db, "posts", postId);
+    await updateDoc(postRef, {
+      likes_count: increment(1)
+    });
+    return { status: "success" };
+  } catch (error: any) {
+    return { status: "error", message: error.message };
+  }
+}
+
 export async function archiveTourPackage(id: string) {
   try {
     await setDoc(doc(db, "packages", id), { is_archived: true }, { merge: true });
@@ -198,18 +224,6 @@ export async function addTourPackage(payload: any) {
       createdAt: serverTimestamp(),
     });
     return { status: "success", package_id: docRef.id };
-  } catch (error: any) {
-    return { status: "error", message: error.message };
-  }
-}
-
-export async function addVehicle(payload: any) {
-  try {
-    const docRef = await addDoc(collection(db, "cars"), {
-      ...payload,
-      createdAt: serverTimestamp(),
-    });
-    return { status: "success", vehicle_id: docRef.id };
   } catch (error: any) {
     return { status: "error", message: error.message };
   }
