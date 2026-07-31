@@ -6,10 +6,102 @@ import {
   deleteDoc,
   doc, 
   setDoc, 
-  serverTimestamp,
-  updateDoc,
-  increment
+  serverTimestamp 
 } from "firebase/firestore";
+
+export const PARK_PROFILES: Record<string, any> = {
+  bandhavgarh: {
+    slug: "bandhavgarh",
+    name: "Bandhavgarh National Park",
+    state: "Madhya Pradesh",
+    district: "Umaria",
+    established: "1968",
+    area_sq_km: 1536,
+    tiger_density: "Highest Tiger Density in India (approx. 1 tiger per 4 sq km)",
+    tagline: "The Royal Bengal Sanctuary & Ancient Fort",
+    hero_image: "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg",
+    overview: "Bandhavgarh National Park is world-renowned for having the highest density of Royal Bengal tigers in India. Surrounded by steep sandstone cliffs and ancient 2000-year-old fort ruins, Bandhavgarh offers unmatched tiger tracking opportunities across Tala, Magdhi, and Khitauli zones.",
+    best_season: "October 1st to June 30th (Peak sightings in March–May near waterholes)",
+    zones: [
+      { name: "Tala Zone (Gate 1)", desc: "The iconic core zone. Features Shesh Shaiya (65ft carved Vishnu idol), Bandhavgarh Fort, and high tiger density." },
+      { name: "Magdhi Zone (Gate 2)", desc: "Open grasslands, bamboo hillocks, and waterholes. Home to large male tiger territories." },
+      { name: "Khitauli Zone (Gate 3)", desc: "Bamboo forests and rocky hills. Excellent for leopards, sloth bears, and birdwatching." }
+    ],
+    fauna: ["Royal Bengal Tiger", "Leopard", "Sloth Bear", "Gaur (Indian Bison)", "Chital", "Sambar", "Barking Deer", "250+ Bird Species"]
+  },
+  kanha: {
+    slug: "kanha",
+    name: "Kanha National Park",
+    state: "Madhya Pradesh",
+    district: "Mandla / Balaghat",
+    established: "1955",
+    area_sq_km: 2051,
+    tiger_density: "Vast Core Tiger Reserve (over 120+ tigers)",
+    tagline: "Land of the Barasingha & Evergreen Sal Forests",
+    hero_image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrZoWc_WzK25PAeBO-8XQb3gf8AgEfVEnridQ2osZ7Eci7pYCYmDrE3yes&s=10",
+    overview: "Kanha Tiger Reserve is the lush meadow setting that inspired Rudyard Kipling. Famous for its successful conservation of the rare Hard-Ground Barasingha (Swamp Deer), Kanha features dramatic bamboo and sal forest landscapes with dense tiger activity.",
+    best_season: "October to June (Nov–Feb for lush weather; Mar–May for tiger sightings)",
+    zones: [
+      { name: "Mukki Zone", desc: "Famous for frequent tiger sightings along stream beds and sal trees." },
+      { name: "Khatia Zone", desc: "Dense sal forest canopy with high herbivore and tiger density." },
+      { name: "Kanha Zone", desc: "Vast scenic meadows and central waterholes." }
+    ],
+    fauna: ["Royal Bengal Tiger", "Hard-Ground Barasingha", "Leopard", "Wild Dog (Dhole)", "Gaur", "Chital"]
+  },
+  pench: {
+    slug: "pench",
+    name: "Pench National Park",
+    state: "Madhya Pradesh",
+    district: "Seoni / Chhindwara",
+    established: "1975",
+    area_sq_km: 1180,
+    tiger_density: "High Tiger & Leopard Density",
+    tagline: "The Real Jungle Book Country",
+    hero_image: "https://indiantigersafaris.com/wp-content/uploads/2025/10/Pench-Tiger-Safari-Tour-Package.webp",
+    overview: "Pench National Park flows along the Pench River, serving as the real-life setting for Rudyard Kipling's 'The Jungle Book'. Blessed with open teak forests, Pench offers superb visibility for tracking tigers, leopards, and wild dog packs.",
+    best_season: "October 15th to June 30th",
+    zones: [
+      { name: "Turia Gate", desc: "The main safari gate with waterbodies and prime tiger movement." },
+      { name: "Karmajhiri Gate", desc: "Secluded core forest with dense teak canopy." }
+    ],
+    fauna: ["Royal Bengal Tiger", "Indian Leopard", "Wild Dog (Dhole)", "Sloth Bear", "Chousingha (Four-horned Antelope)"]
+  },
+  panna: {
+    slug: "panna",
+    name: "Panna National Park",
+    state: "Madhya Pradesh",
+    district: "Panna / Chhatarpur",
+    established: "1981",
+    area_sq_km: 1645,
+    tiger_density: "Thriving Reintroduced Tiger Population",
+    tagline: "Ken River Gorges & Reintroduced Tigers",
+    hero_image: "https://images.pexels.com/photos/21896819/pexels-photo-21896819.jpeg",
+    overview: "Panna Tiger Reserve is one of India's greatest wildlife restoration stories. Situated along the turquoise gorges of the Ken River, Panna offers river boat safaris alongside 4x4 open jeep tracking.",
+    best_season: "October to June",
+    zones: [
+      { name: "Madla Gate", desc: "Near Ken River, famous for crocodile boat safaris and tiger tracking." },
+      { name: "Hinouta Gate", desc: "Plateau and gorge terrain for leopards and sloth bears." }
+    ],
+    fauna: ["Royal Bengal Tiger", "Leopard", "Gharial & Mugger Crocodile", "Sloth Bear", "King Vulture"]
+  },
+  satpura: {
+    slug: "satpura",
+    name: "Satpura National Park",
+    state: "Madhya Pradesh",
+    district: "Hoshangabad",
+    established: "1981",
+    area_sq_km: 2133,
+    tiger_density: "Secluded Untamed Wilderness",
+    tagline: "Sandstone Peaks, Canoeing & Walking Safaris",
+    hero_image: "https://images.unsplash.com/photo-1500463959177-e0869687df26?auto=format&fit=crop&q=80&w=800",
+    overview: "Satpura Tiger Reserve is unique in offering canoe safaris, walking forest patrols, and night drives along sandstone ravines and Denwa River backwaters. A peaceful haven for leopards, sloth bears, and tigers.",
+    best_season: "October 1st to June 30th",
+    zones: [
+      { name: "Panaarpani / Madhai", desc: "Main entry via boat across Denwa River into core jungle." }
+    ],
+    fauna: ["Royal Bengal Tiger", "Leopard", "Sloth Bear", "Indian Giant Squirrel", "Gaur", "Crested Serpent Eagle"]
+  }
+};
 
 const SEED_DATA = {
   founder: {
@@ -17,15 +109,15 @@ const SEED_DATA = {
     phone: "9425331205",
     role: "Founder & Premier Tour Operator",
     headquarter: "Bandhavgarh National Park, MP",
-    bio: "Dinesh Pandey (+91 9425331205) is the proud business owner of Pandey Tiger Safaris across Madhya Pradesh's tiger reserves. Dinesh provides end-to-end tour and travel management—offering complete safari packages, luxury vehicle fleets (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed forest guides and tiger trackers on demand.",
+    bio: "Dinesh Pandey (+91 9425331205) is the proud business owner of Pandey Tiger Safaris across Madhya Pradesh's tiger reserves. Dinesh provides end-to-end tour and travel management—offering complete safari packages, luxury vehicle fleets (Innova Crysta, Force Traveller, Swift Dzire), and an army of Bandhavgarh's finest licensed forest guides and tiger trackers on demand.",
     image_url: "/dinesh-pandey.jpg"
   },
   parks: [
-    { id: "park_1", name: "Bandhavgarh National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&q=80&w=800" },
-    { id: "park_2", name: "Kanha National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=800" },
-    { id: "park_3", name: "Pench National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800" },
-    { id: "park_4", name: "Panna National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800" },
-    { id: "park_5", name: "Satpura National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" }
+    { id: "park_1", slug: "bandhavgarh", name: "Bandhavgarh National Park", state: "Madhya Pradesh", image_url: "https://bandhavgarhtigerreserve.org/storage/app/public/gallery/279646059399eaba1015ba0275a5690b507b65f2.jpg" },
+    { id: "park_2", slug: "kanha", name: "Kanha National Park", state: "Madhya Pradesh", image_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrZoWc_WzK25PAeBO-8XQb3gf8AgEfVEnridQ2osZ7Eci7pYCYmDrE3yes&s=10" },
+    { id: "park_3", slug: "pench", name: "Pench National Park", state: "Madhya Pradesh", image_url: "https://indiantigersafaris.com/wp-content/uploads/2025/10/Pench-Tiger-Safari-Tour-Package.webp" },
+    { id: "park_4", slug: "panna", name: "Panna National Park", state: "Madhya Pradesh", image_url: "https://images.pexels.com/photos/21896819/pexels-photo-21896819.jpeg" },
+    { id: "park_5", slug: "satpura", name: "Satpura National Park", state: "Madhya Pradesh", image_url: "https://images.unsplash.com/photo-1500463959177-e0869687df26?auto=format&fit=crop&q=80&w=800" }
   ],
   cars: [
     { 
@@ -77,7 +169,10 @@ const SEED_DATA = {
   packages: [],
   drivers: [],
   blocked_dates: [],
-  reviews: [],
+  reviews: [
+    { id: "rev_1", author: "Ananya Sharma", location: "Delhi, India", rating: 5, comment: "Dinesh Pandey (+91 9425331205) organized our entire package and provided the best forest guide. Top service!" },
+    { id: "rev_2", author: "Suresh Kothari", location: "Mumbai, India", rating: 5, comment: "Booked an Innova Crysta and complete tour with Dinesh Ji. Everything was seamless!" }
+  ],
   contact: {
     hq_address: "Tala Gate Road, Near Bandhavgarh National Park, Umaria, MP - 484661",
     phone: "9425331205",
@@ -141,7 +236,6 @@ export async function submitBooking(payload: any) {
   }
 }
 
-// Create Social Safari Post in Firestore
 export async function createSocialPost(payload: any) {
   try {
     const docRef = await addDoc(collection(db, "posts"), {
@@ -150,19 +244,6 @@ export async function createSocialPost(payload: any) {
       createdAt: serverTimestamp(),
     });
     return { status: "success", post_id: docRef.id };
-  } catch (error: any) {
-    return { status: "error", message: error.message };
-  }
-}
-
-// Toggle Post Likes
-export async function togglePostLike(postId: string) {
-  try {
-    const postRef = doc(db, "posts", postId);
-    await updateDoc(postRef, {
-      likes_count: increment(1)
-    });
-    return { status: "success" };
   } catch (error: any) {
     return { status: "error", message: error.message };
   }
