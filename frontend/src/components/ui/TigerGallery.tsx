@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Sparkles, MapPin, Maximize2, Compass } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, MapPin, Maximize2, X, Compass } from "lucide-react";
 import { triggerHaptic } from "../../lib/sound";
-import Modal from "./Modal";
 
 export default function TigerGallery() {
   const tigerPhotos = [
@@ -62,6 +62,23 @@ export default function TigerGallery() {
 
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [activeLightBox, setActiveLightBox] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock background scroll when modal is active
+  useEffect(() => {
+    if (activeLightBox) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [activeLightBox]);
 
   const filteredPhotos = selectedFilter === "All"
     ? tigerPhotos
@@ -84,11 +101,12 @@ export default function TigerGallery() {
         {parks.map(park => (
           <button
             key={park}
+            type="button"
             onClick={() => {
               triggerHaptic(10);
               setSelectedFilter(park);
             }}
-            className={`px-5 py-2 rounded-full text-xs font-bold transition-all active:scale-95 ${
+            className={`px-5 py-2 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${
               selectedFilter === park
                 ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
                 : "bg-zinc-950 border border-white/10 text-zinc-400 hover:text-white hover:border-orange-500/40"
@@ -99,29 +117,25 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* Photo Grid */}
+      {/* Native Button Grid for 100% Reliable Click/Tap Detection */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPhotos.map((photo) => (
-          <motion.div
+          <button
             key={photo.id}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -8, scale: 1.02 }}
-            transition={{ duration: 0.3 }}
-            className="group relative bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl overflow-hidden shadow-2xl cursor-pointer"
+            type="button"
             onClick={() => {
               triggerHaptic(12);
               setActiveLightBox(photo);
             }}
+            className="group relative bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl overflow-hidden shadow-2xl cursor-pointer text-left w-full focus:outline-none active:scale-[0.98] transition-all"
           >
             <div className="relative h-72 w-full overflow-hidden">
               <img
                 src={photo.image_url}
                 alt={photo.title}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent pointer-events-none" />
             </div>
 
             <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md p-2 rounded-full border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -134,59 +148,96 @@ export default function TigerGallery() {
               </span>
               <h4 className="font-bold text-lg text-white">{photo.title}</h4>
             </div>
-          </motion.div>
+          </button>
         ))}
       </div>
 
-      {/* Viewport-Locked Dead-Centered Modal Component */}
-      <Modal isOpen={!!activeLightBox} onClose={() => setActiveLightBox(null)}>
-        {activeLightBox && (
-          <div>
-            <div className="relative h-56 sm:h-64 md:h-72 w-full bg-black overflow-hidden flex-shrink-0">
-              <img
-                src={activeLightBox.image_url}
-                alt={activeLightBox.title}
-                className="w-full h-full object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
-            </div>
+      {/* Direct Portal Render attached to document.body */}
+      {mounted && activeLightBox && createPortal(
+        <AnimatePresence mode="wait">
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => {
+                triggerHaptic(10);
+                setActiveLightBox(null);
+              }}
+              className="fixed inset-0 bg-black/90 backdrop-blur-2xl cursor-pointer"
+            />
 
-            <div className="p-5 md:p-6 space-y-3.5 bg-zinc-950 text-white">
-              <div className="flex flex-wrap justify-between items-center gap-2">
-                <span className="text-[10px] uppercase font-extrabold text-black bg-orange-500 px-2.5 py-0.5 rounded-full tracking-wider">
-                  {activeLightBox.park} Sanctuary
-                </span>
-                <span className="text-[10px] font-mono text-zinc-500 font-medium">MP Wildlife Circuit</span>
+            {/* Viewport-Centered Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 450, damping: 30 }}
+              className="relative z-[1000000] w-full max-w-2xl max-h-[85vh] bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between my-auto"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(10);
+                  setActiveLightBox(null);
+                }}
+                className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-black p-2.5 rounded-full text-white hover:text-orange-400 border border-white/10 active:scale-95 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Compact Image */}
+              <div className="relative h-52 sm:h-64 md:h-72 w-full bg-black overflow-hidden flex-shrink-0">
+                <img
+                  src={activeLightBox.image_url}
+                  alt={activeLightBox.title}
+                  className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
               </div>
 
-              <h3 className="text-xl md:text-2xl font-extrabold text-white tracking-tight leading-snug">
-                {activeLightBox.title}
-              </h3>
-              
-              <p className="text-xs md:text-sm text-zinc-400 font-light line-clamp-2 leading-relaxed">
-                {activeLightBox.caption}
-              </p>
+              {/* Content */}
+              <div className="p-5 md:p-6 space-y-3 bg-zinc-950 text-white z-20">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <span className="text-[10px] uppercase font-extrabold text-black bg-orange-500 px-2.5 py-0.5 rounded-full tracking-wider">
+                    {activeLightBox.park} Sanctuary
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-500 font-medium">MP Wildlife Circuit</span>
+                </div>
 
-              <div className="pt-1">
-                <Link
-                  href={`/booking?park=${encodeURIComponent(
-                    activeLightBox.park.includes("National Park") 
-                      ? activeLightBox.park 
-                      : `${activeLightBox.park} National Park`
-                  )}`}
-                  onClick={() => {
-                    triggerHaptic(15);
-                    setActiveLightBox(null);
-                  }}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-6 py-3.5 rounded-full text-xs transition-all shadow-xl shadow-orange-500/25 active:scale-95 cursor-pointer"
-                >
-                  <Compass className="w-4 h-4" /> Book {activeLightBox.park} Safari Now &rarr;
-                </Link>
+                <h3 className="text-xl md:text-2xl font-extrabold text-white tracking-tight leading-snug">
+                  {activeLightBox.title}
+                </h3>
+
+                <p className="text-xs md:text-sm text-zinc-400 font-light line-clamp-2 leading-relaxed">
+                  {activeLightBox.caption}
+                </p>
+
+                <div className="pt-1">
+                  <Link
+                    href={`/booking?park=${encodeURIComponent(
+                      activeLightBox.park.includes("National Park") 
+                        ? activeLightBox.park 
+                        : `${activeLightBox.park} National Park`
+                    )}`}
+                    onClick={() => {
+                      triggerHaptic(15);
+                      setActiveLightBox(null);
+                    }}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-6 py-3.5 rounded-full text-xs transition-all shadow-xl shadow-orange-500/25 active:scale-95 cursor-pointer"
+                  >
+                    <Compass className="w-4 h-4" /> Book {activeLightBox.park} Safari Now &rarr;
+                  </Link>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </div>
-        )}
-      </Modal>
+        </AnimatePresence>,
+        document.body
+      )}
     </section>
   );
 }
