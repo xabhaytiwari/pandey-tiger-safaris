@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, LogOut, Phone, Menu, X, Sparkles } from "lucide-react";
+import { User, LogOut, Phone, Menu, X } from "lucide-react";
 import { auth, onAuthStateChanged, signOut } from "../../lib/firebase";
 import { triggerHaptic } from "../../lib/sound";
 
@@ -33,7 +33,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/social", label: "Safari Feed" },
+    { href: "/gallery", label: "Gallery" },
     { href: "/sightings", label: "Live Map" },
     { href: "/packages", label: "Packages" },
     { href: "/fleet", label: "Fleet" },
@@ -64,7 +64,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => triggerHaptic(10)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all relative ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all relative ${
                     isActive
                       ? "text-black font-extrabold"
                       : "text-zinc-400 hover:text-white hover:bg-white/5"
