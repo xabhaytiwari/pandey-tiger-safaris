@@ -13,6 +13,8 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: #000000;
+    color: #ffffff;
   }
 
   /* Hardware GPU Layer Promotion for 120Hz Smoothness */
@@ -20,5 +22,16 @@
     transform: translateZ(0);
     will-change: transform, opacity;
     backface-visibility: hidden;
+  }
+
+  /* Forest Green & Tiger Glow Utility */
+  .forest-card {
+    background-color: #09090b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .forest-card:hover {
+    border-color: rgba(255, 122, 0, 0.5);
+    box-shadow: 0 10px 30px -10px rgba(255, 122, 0, 0.15);
   }
 }

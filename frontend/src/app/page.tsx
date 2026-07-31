@@ -11,7 +11,7 @@ import LiveSightingTicker from "../components/ui/LiveSightingTicker";
 import ZoneGuide from "../components/sections/ZoneGuide";
 import AnimatedCounter from "../components/ui/AnimatedCounter";
 import { fetchFromAPI } from "../lib/api";
-import { Compass, Sparkles, ArrowRight, Car, Users, Zap } from "lucide-react";
+import { Compass, Sparkles, ArrowRight, Car, Users, Zap, Trees, ShieldCheck } from "lucide-react";
 
 export default function Home() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -56,9 +56,10 @@ export default function Home() {
     <main className="min-h-screen bg-black text-white overflow-x-hidden">
       <LiveSightingTicker />
 
-      {/* Hero Section */}
+      {/* Hero Section with Dual Forest Green & Tiger Orange Ambient Glow */}
       <section className="relative w-screen left-1/2 right-1/2 -mx-[50vw] pt-28 pb-20 md:pt-36 md:pb-28 flex flex-col items-center text-center overflow-hidden min-h-[85vh] justify-center">
         
+        {/* Full-Bleed Autoplay Background Image */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.img
@@ -73,7 +74,8 @@ export default function Home() {
             />
           </AnimatePresence>
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/75" />
+          {/* Gradient Masks */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black" />
         </div>
 
@@ -84,21 +86,28 @@ export default function Home() {
           animate="visible"
           className="relative z-10 space-y-8 max-w-5xl mx-auto px-6"
         >
-          <motion.div variants={itemVariants} className="inline-flex">
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-extrabold uppercase tracking-widest backdrop-blur-xl shadow-lg shadow-orange-500/10">
-              <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" /> Business Owner • Dinesh Pandey (+91 9425331205)
+          {/* Badges: Forest Green + Tiger Orange */}
+          <motion.div variants={itemVariants} className="flex flex-wrap gap-2 justify-center">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-extrabold uppercase tracking-widest backdrop-blur-xl shadow-lg shadow-orange-500/10">
+              <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" /> Owner Operated • Dinesh Pandey (+91 9425331205)
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-bold backdrop-blur-xl">
+              <Trees className="w-4 h-4 text-emerald-400" /> MP Forest Dept Authorized
             </span>
           </motion.div>
 
+          {/* Main Title with Typewriter Sound & Park Names Animation */}
           <motion.h1 variants={itemVariants} className="text-5xl md:text-8xl font-black tracking-tight text-balance leading-none">
             Unleash the Wild in <br className="hidden md:block" />
             <TypewriterHero />
           </motion.h1>
 
+          {/* Description */}
           <motion.p variants={itemVariants} className="text-zinc-200 text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed drop-shadow-md">
             Spearheaded by business owner Dinesh Pandey (+91 9425331205). Complete tour packages, luxury transport (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed safari guides on demand.
           </motion.p>
 
+          {/* Call-to-Actions */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
               <Link href="/booking" className="w-full sm:w-auto px-9 py-4 bg-orange-500 text-black font-black text-sm rounded-full hover:bg-orange-400 transition-all flex items-center justify-center gap-2.5 shadow-xl shadow-orange-500/25">
@@ -113,14 +122,14 @@ export default function Home() {
             </motion.div>
           </motion.div>
 
-          {/* Animated Counter Stats */}
+          {/* Stats Banner */}
           <motion.div variants={itemVariants} className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto border-t border-white/10 text-center">
             <div>
               <p className="text-orange-500"><AnimatedCounter value={20} suffix="+" /></p>
               <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">Years Experience</p>
             </div>
             <div>
-              <p className="text-white"><AnimatedCounter value={5} suffix=" Reserves" /></p>
+              <p className="text-emerald-400"><AnimatedCounter value={5} suffix=" Reserves" /></p>
               <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">MP Tiger Parks</p>
             </div>
             <div>
@@ -128,21 +137,25 @@ export default function Home() {
               <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">Innova / Traveller</p>
             </div>
             <div>
-              <p className="text-3xl font-black text-white">Guides</p>
+              <p className="text-3xl font-black text-emerald-400">Guides</p>
               <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">Army of Experts</p>
             </div>
           </motion.div>
         </motion.div>
       </section>
 
+      {/* Safari Zone Guide */}
       <ZoneGuide />
 
+      {/* Royal Bengal Tiger Photography Showcase */}
       <div className="max-w-6xl mx-auto px-4">
         <TigerGallery />
       </div>
 
+      {/* Guest Testimonials Marquee */}
       <ReviewMarquee reviews={reviews} />
 
+      {/* Real Owner & Fleet Slideshow */}
       <div className="max-w-6xl mx-auto py-12 px-4">
         <GallerySlideshow />
       </div>
@@ -193,13 +206,13 @@ export default function Home() {
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.02 }} transition={{ duration: 0.3 }}>
             <Link href="/about" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
               <div className="space-y-4 z-10">
-                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-950 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                   <Users className="w-6 h-6" />
                 </div>
                 <h3 className="text-2xl font-bold text-white">Owner: Dinesh Pandey</h3>
                 <p className="text-zinc-400 text-xs font-light leading-relaxed">Providing full tours, travels & an army of top forest guides. Call +91 9425331205.</p>
               </div>
-              <div className="z-10 text-xs font-extrabold text-orange-500 flex items-center gap-1.5 pt-6">
+              <div className="z-10 text-xs font-extrabold text-emerald-400 flex items-center gap-1.5 pt-6">
                 About Dinesh Pandey <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1.5 transition-transform" />
               </div>
             </Link>
