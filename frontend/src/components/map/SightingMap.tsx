@@ -71,7 +71,14 @@ export default function SightingMap() {
     return () => unsub();
   }, []);
 
-  // Manual Refresh Handler
+  // Auto-refresh map data 1 second after loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleManualRefresh();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleManualRefresh = async () => {
     triggerHaptic(12);
     setIsRefreshing(true);
@@ -109,7 +116,6 @@ export default function SightingMap() {
     }
   }, []);
 
-  // Inject SVG Radial Gradients for Strong Blending
   const injectSvgGradients = (map: any) => {
     try {
       const svg = map.getPanes().overlayPane.querySelector("svg");
@@ -199,7 +205,6 @@ export default function SightingMap() {
     }
   }, [selectedPark]);
 
-  // Render Strong Multi-Stop SVG Heat Gradients with Mathematical Radius Scaling
   useEffect(() => {
     if (!window.L || !markersGroupRef.current) return;
 
@@ -222,10 +227,6 @@ export default function SightingMap() {
       const createdAtMs = s.createdAt?.seconds ? s.createdAt.seconds * 1000 : now;
       const hoursAgo = (now - createdAtMs) / (1000 * 60 * 60);
 
-      // MATHEMATICAL TIGER MOVEMENT AREA RADIUS:
-      // < 2h: 1,200m radius (~4.5 sq km immediate search area)
-      // 2-12h: 3,800m radius (~45.3 sq km core territory roaming range)
-      // 12-24h: 8,500m radius (~226.9 sq km full reserve range)
       let radiusMeters = 1200;
       let fillGradUrl = "url(#grad-fresh)";
       let strokeColor = "#FF2D55";
@@ -240,7 +241,6 @@ export default function SightingMap() {
         strokeColor = "#5856D6";
       }
 
-      // 1. Strong Gradient Circle Scaling Dynamically in Meters on Earth
       const circle = window.L.circle([s.lat, s.lng], {
         radius: radiusMeters,
         fillColor: strokeColor,
@@ -254,7 +254,6 @@ export default function SightingMap() {
         circle._path.setAttribute("fill", fillGradUrl);
       }
 
-      // 2. Tiger Pin Badge
       const tigerPinIcon = window.L.divIcon({
         className: "custom-tiger-pin",
         html: `
@@ -457,7 +456,6 @@ export default function SightingMap() {
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
-          {/* Instant Manual Refresh Button */}
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
@@ -468,7 +466,6 @@ export default function SightingMap() {
             <span>{isRefreshing ? "Syncing..." : "Refresh"}</span>
           </button>
 
-          {/* 1-Click Satellite Toggle */}
           <button
             onClick={() => {
               triggerHaptic(12);

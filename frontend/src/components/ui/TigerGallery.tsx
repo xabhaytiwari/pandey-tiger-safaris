@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MapPin, Maximize2, X, Compass } from "lucide-react";
+import { motion } from "framer-motion";
+import { Sparkles, MapPin, Maximize2, Compass, ChevronLeft, ChevronRight } from "lucide-react";
 import { triggerHaptic } from "../../lib/sound";
+import Modal from "./Modal";
 
 export default function TigerGallery() {
   const tigerPhotos = [
@@ -61,30 +61,25 @@ export default function TigerGallery() {
   ];
 
   const [selectedFilter, setSelectedFilter] = useState("All");
-  const [activeLightBox, setActiveLightBox] = useState<any>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Lock background scroll when modal is active
-  useEffect(() => {
-    if (activeLightBox) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [activeLightBox]);
+  const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
 
   const filteredPhotos = selectedFilter === "All"
     ? tigerPhotos
     : tigerPhotos.filter(p => p.park === selectedFilter);
 
   const parks = ["All", "Bandhavgarh", "Kanha", "Pench", "Panna"];
+
+  const handlePrevPhoto = () => {
+    triggerHaptic(10);
+    setActivePhotoIndex((prev) => (prev === null || prev === 0 ? filteredPhotos.length - 1 : prev - 1));
+  };
+
+  const handleNextPhoto = () => {
+    triggerHaptic(10);
+    setActivePhotoIndex((prev) => (prev === null || prev === filteredPhotos.length - 1 ? 0 : prev + 1));
+  };
+
+  const activePhoto = activePhotoIndex !== null ? filteredPhotos[activePhotoIndex] : null;
 
   return (
     <section className="space-y-8 py-12">
@@ -96,17 +91,15 @@ export default function TigerGallery() {
         <p className="text-zinc-400 text-sm max-w-2xl mx-auto font-light">Explore high-definition tiger sightings across MP reserves. Click any photo to book a safari for that park.</p>
       </div>
 
-      {/* Park Filter Tabs */}
       <div className="flex flex-wrap justify-center gap-2">
         {parks.map(park => (
           <button
             key={park}
-            type="button"
             onClick={() => {
               triggerHaptic(10);
               setSelectedFilter(park);
             }}
-            className={`px-5 py-2 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+            className={`px-5 py-2 rounded-full text-xs font-bold transition-all active:scale-95 ${
               selectedFilter === park
                 ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
                 : "bg-zinc-950 border border-white/10 text-zinc-400 hover:text-white hover:border-orange-500/40"
@@ -117,23 +110,27 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* Native Button Grid for 100% Reliable Click/Tap Detection */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredPhotos.map((photo) => (
-          <button
+        {filteredPhotos.map((photo, idx) => (
+          <motion.button
             key={photo.id}
             type="button"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            whileHover={{ y: -8, scale: 1.02 }}
+            transition={{ duration: 0.3 }}
+            className="group relative bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl overflow-hidden shadow-2xl cursor-pointer text-left w-full focus:outline-none active:scale-[0.98]"
             onClick={() => {
               triggerHaptic(12);
-              setActiveLightBox(photo);
+              setActivePhotoIndex(idx);
             }}
-            className="group relative bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl overflow-hidden shadow-2xl cursor-pointer text-left w-full focus:outline-none active:scale-[0.98] transition-all"
           >
             <div className="relative h-72 w-full overflow-hidden">
               <img
                 src={photo.image_url}
                 alt={photo.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent pointer-events-none" />
             </div>
@@ -148,96 +145,98 @@ export default function TigerGallery() {
               </span>
               <h4 className="font-bold text-lg text-white">{photo.title}</h4>
             </div>
-          </button>
+          </motion.button>
         ))}
       </div>
 
-      {/* Direct Portal Render attached to document.body */}
-      {mounted && activeLightBox && createPortal(
-        <AnimatePresence mode="wait">
-          <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => {
-                triggerHaptic(10);
-                setActiveLightBox(null);
-              }}
-              className="fixed inset-0 bg-black/90 backdrop-blur-2xl cursor-pointer"
-            />
+      {/* Navigable & Scrollable Lightbox Modal */}
+      <Modal isOpen={activePhotoIndex !== null} onClose={() => setActivePhotoIndex(null)}>
+        {activePhoto && (
+          <div>
+            <div className="relative h-56 sm:h-64 md:h-72 w-full bg-black overflow-hidden flex-shrink-0 group">
+              <img
+                src={activePhoto.image_url}
+                alt={activePhoto.title}
+                className="w-full h-full object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
 
-            {/* Viewport-Centered Card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 450, damping: 30 }}
-              className="relative z-[1000000] w-full max-w-2xl max-h-[85vh] bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between my-auto"
-            >
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic(10);
-                  setActiveLightBox(null);
-                }}
-                className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-black p-2.5 rounded-full text-white hover:text-orange-400 border border-white/10 active:scale-95 transition-all cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {/* Prev / Next Navigation Arrows */}
+              <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between items-center z-30 pointer-events-none">
+                <button
+                  type="button"
+                  onClick={handlePrevPhoto}
+                  className="pointer-events-auto bg-black/70 hover:bg-black p-2 rounded-full text-white hover:text-orange-400 border border-white/10 transition-all active:scale-95"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextPhoto}
+                  className="pointer-events-auto bg-black/70 hover:bg-black p-2 rounded-full text-white hover:text-orange-400 border border-white/10 transition-all active:scale-95"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
 
-              {/* Compact Image */}
-              <div className="relative h-52 sm:h-64 md:h-72 w-full bg-black overflow-hidden flex-shrink-0">
-                <img
-                  src={activeLightBox.image_url}
-                  alt={activeLightBox.title}
-                  className="w-full h-full object-cover object-center"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
+            <div className="p-5 md:p-6 space-y-3.5 bg-zinc-950 text-white">
+              <div className="flex flex-wrap justify-between items-center gap-2">
+                <span className="text-[10px] uppercase font-extrabold text-black bg-orange-500 px-2.5 py-0.5 rounded-full tracking-wider">
+                  {activePhoto.park} Sanctuary
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400 font-bold">
+                  {activePhotoIndex! + 1} of {filteredPhotos.length}
+                </span>
               </div>
 
-              {/* Content */}
-              <div className="p-5 md:p-6 space-y-3 bg-zinc-950 text-white z-20">
-                <div className="flex flex-wrap justify-between items-center gap-2">
-                  <span className="text-[10px] uppercase font-extrabold text-black bg-orange-500 px-2.5 py-0.5 rounded-full tracking-wider">
-                    {activeLightBox.park} Sanctuary
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-500 font-medium">MP Wildlife Circuit</span>
-                </div>
+              <h3 className="text-xl md:text-2xl font-extrabold text-white tracking-tight leading-snug">
+                {activePhoto.title}
+              </h3>
 
-                <h3 className="text-xl md:text-2xl font-extrabold text-white tracking-tight leading-snug">
-                  {activeLightBox.title}
-                </h3>
+              <p className="text-xs md:text-sm text-zinc-400 font-light leading-relaxed">
+                {activePhoto.caption}
+              </p>
 
-                <p className="text-xs md:text-sm text-zinc-400 font-light line-clamp-2 leading-relaxed">
-                  {activeLightBox.caption}
-                </p>
-
-                <div className="pt-1">
-                  <Link
-                    href={`/booking?park=${encodeURIComponent(
-                      activeLightBox.park.includes("National Park") 
-                        ? activeLightBox.park 
-                        : `${activeLightBox.park} National Park`
-                    )}`}
+              {/* Scrollable Thumbnail Strip inside Modal */}
+              <div className="flex gap-2 overflow-x-auto py-2 scrollbar-none border-t border-white/10 pt-3">
+                {filteredPhotos.map((p, idx) => (
+                  <button
+                    key={p.id}
+                    type="button"
                     onClick={() => {
-                      triggerHaptic(15);
-                      setActiveLightBox(null);
+                      triggerHaptic(10);
+                      setActivePhotoIndex(idx);
                     }}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-6 py-3.5 rounded-full text-xs transition-all shadow-xl shadow-orange-500/25 active:scale-95 cursor-pointer"
+                    className={`relative w-16 h-12 rounded-xl overflow-hidden flex-shrink-0 border transition-all ${
+                      activePhotoIndex === idx ? "border-orange-500 ring-2 ring-orange-500 scale-105" : "border-white/10 opacity-50 hover:opacity-100"
+                    }`}
                   >
-                    <Compass className="w-4 h-4" /> Book {activeLightBox.park} Safari Now &rarr;
-                  </Link>
-                </div>
+                    <img src={p.image_url} alt="Thumb" className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
-            </motion.div>
+
+              <div className="pt-1">
+                <Link
+                  href={`/booking?park=${encodeURIComponent(
+                    activePhoto.park.includes("National Park") 
+                      ? activePhoto.park 
+                      : `${activePhoto.park} National Park`
+                  )}`}
+                  onClick={() => {
+                    triggerHaptic(15);
+                    setActivePhotoIndex(null);
+                  }}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-6 py-3.5 rounded-full text-xs transition-all shadow-xl shadow-orange-500/25 active:scale-95 cursor-pointer"
+                >
+                  <Compass className="w-4 h-4" /> Book {activePhoto.park} Safari Now &rarr;
+                </Link>
+              </div>
+            </div>
           </div>
-        </AnimatePresence>,
-        document.body
-      )}
+        )}
+      </Modal>
     </section>
   );
 }

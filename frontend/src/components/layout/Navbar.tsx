@@ -18,6 +18,23 @@ export default function Navbar() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Weather Cycling for All MP Parks
+  const parkWeatherList = [
+    "🌤️ 26°C Bandhavgarh • Tala Open",
+    "☀️ 28°C Kanha • Mukki Open",
+    "🌤️ 27°C Pench • Turia Open",
+    "⛅ 29°C Panna • Madla Open",
+    "🌤️ 25°C Satpura • Panaarpani Open"
+  ];
+  const [weatherIndex, setWeatherIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setWeatherIndex((prev) => (prev + 1) % parkWeatherList.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [parkWeatherList.length]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -46,11 +63,9 @@ export default function Navbar() {
 
   return (
     <>
-      {/* End-to-End Liquid Glass Header */}
       <header className="fixed top-0 left-0 right-0 z-[100] w-full bg-black/80 backdrop-blur-2xl border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]">
         <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
           
-          {/* Brand Logo - Tiger Orange & White */}
           <Link href="/" onClick={() => { triggerHaptic(10); setMobileMenuOpen(false); }} className="font-extrabold text-lg tracking-tight text-white flex items-center gap-2 group">
             <span className="text-white group-hover:text-orange-500 transition-colors">Pandey Tiger</span>
             <span className="text-xs bg-orange-500 text-black font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md shadow-orange-500/20">
@@ -58,7 +73,6 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1 bg-zinc-950 border border-white/10 p-1.5 rounded-full backdrop-blur-md">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -86,14 +100,23 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right Header Actions: Forest Green Status, Audio & Phone */}
           <div className="hidden lg:flex items-center gap-2.5">
-            {/* Live Weather & Gate Status Badge (Forest Green) */}
-            <div className="hidden xl:flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[11px] font-bold px-3 py-1.5 rounded-full">
-              <Sun className="w-3.5 h-3.5 text-amber-400" /> 26°C Bandhavgarh • Tala Open
+            {/* Auto-Cycling Weather Badge Across All MP Parks */}
+            <div className="hidden xl:flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[11px] font-bold px-3.5 py-1.5 rounded-full min-w-[210px] justify-center overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={parkWeatherList[weatherIndex]}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="whitespace-nowrap"
+                >
+                  {parkWeatherList[weatherIndex]}
+                </motion.span>
+              </AnimatePresence>
             </div>
 
-            {/* Synthesized Jungle Ambiance Button */}
             <JungleAmbiance />
 
             <a href="tel:9425331205" onClick={() => triggerHaptic(12)} className="text-xs text-orange-400 font-bold flex items-center gap-1.5 hover:scale-105 transition-transform bg-orange-500/10 border border-orange-500/30 px-3.5 py-1.5 rounded-full backdrop-blur-md active:scale-95">
@@ -144,7 +167,7 @@ export default function Navbar() {
                 <div className="pb-2 border-b border-white/10 flex justify-between items-center">
                   <JungleAmbiance />
                   <span className="text-[10px] text-emerald-400 bg-emerald-950 border border-emerald-500/30 px-2.5 py-1 rounded-full font-bold">
-                    26°C Bandhavgarh
+                    {parkWeatherList[weatherIndex]}
                   </span>
                 </div>
 
@@ -201,9 +224,7 @@ export default function Navbar() {
         </AnimatePresence>
       </header>
 
-      {isAuthOpen && (
-        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={(u: any) => setUser(u)} />
-      )}
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={(u: any) => setUser(u)} />
     </>
   );
 }

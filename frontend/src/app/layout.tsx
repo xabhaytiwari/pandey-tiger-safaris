@@ -77,7 +77,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ScrollProgress />
         <CursorGlow />
         <Navbar />
-        <div className="pt-16">{children}</div>
+        {/* Increased Top Padding to Prevent Header Overlap */}
+        <div className="pt-24 md:pt-28">{children}</div>
         <WhatsAppConcierge />
         <Footer />
       </body>
