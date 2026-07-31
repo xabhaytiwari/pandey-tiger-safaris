@@ -4,7 +4,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PARK_PROFILES } from "../../../lib/api";
 import { triggerHaptic } from "../../../lib/sound";
-import { MapPin, Compass, ShieldCheck, Clock, Phone, ArrowRight, Trees, Sparkles, MessageSquare } from "lucide-react";
+import { 
+  MapPin, Compass, ShieldCheck, Clock, Phone, ArrowRight, Trees, Sparkles, MessageSquare, Calendar 
+} from "lucide-react";
 
 export default function SingleParkPage() {
   const params = useParams();
