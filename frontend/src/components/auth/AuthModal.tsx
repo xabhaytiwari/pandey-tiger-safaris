@@ -88,8 +88,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: any) {
 
   return (
     <AnimatePresence mode="wait">
-      {/* Highest Z-Index z-[999999] so Sign-In opens in front of all other cards & modals */}
-      <div className="fixed inset-0 z-[999999] overflow-y-auto">
+      <div className="fixed inset-0 z-[999999]">
+        {/* Backdrop */}
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
@@ -101,13 +101,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: any) {
           className="fixed inset-0 bg-black/85 backdrop-blur-2xl" 
         />
 
-        <div className="flex min-h-full items-center justify-center p-4 text-center">
+        {/* Viewport-Locked Centering Container (100dvh x 100vw) */}
+        <div className="fixed top-0 left-0 w-screen h-[100dvh] flex items-center justify-center p-4 pointer-events-none">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 10 }} 
-            animate={{ opacity: 1, scale: 1, y: 0 }} 
-            exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            exit={{ opacity: 0, scale: 0.95 }} 
             transition={{ type: "spring", stiffness: 450, damping: 30 }}
-            className="relative z-10 w-full max-w-md bg-zinc-950 border border-white/15 rounded-3xl p-6 md:p-8 text-white shadow-2xl text-left my-8"
+            className="pointer-events-auto relative z-10 w-full max-w-md max-h-[85vh] overflow-y-auto bg-zinc-950 border border-white/15 rounded-3xl p-6 md:p-8 text-white shadow-2xl text-left"
           >
             <button 
               onClick={() => {
@@ -130,7 +131,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: any) {
               </div>
             )}
 
-            {/* Google Sign-In */}
             <button 
               type="button" 
               onClick={handleGoogleAuth} 

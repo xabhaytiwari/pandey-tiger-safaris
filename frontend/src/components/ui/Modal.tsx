@@ -44,8 +44,8 @@ export default function Modal({
   return createPortal(
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className={`fixed inset-0 ${zIndex} overflow-y-auto`}>
-          {/* Backdrop */}
+        <div className={`fixed inset-0 ${zIndex}`}>
+          {/* 1. Full-Screen Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -58,14 +58,14 @@ export default function Modal({
             className="fixed inset-0 bg-black/85 backdrop-blur-xl"
           />
 
-          {/* Centering Wrapper */}
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+          {/* 2. Viewport-Locked Centering Container (100dvh x 100vw) */}
+          <div className="fixed top-0 left-0 w-screen h-[100dvh] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 450, damping: 30 }}
-              className={`relative z-10 w-full ${maxWidth} overflow-hidden rounded-3xl bg-zinc-950 border border-white/15 text-left align-middle shadow-2xl my-8 text-white`}
+              className={`pointer-events-auto relative w-full ${maxWidth} max-h-[85vh] overflow-y-auto rounded-3xl bg-zinc-950 border border-white/15 text-left shadow-2xl text-white`}
             >
               {/* Close Button */}
               <button

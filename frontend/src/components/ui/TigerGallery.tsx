@@ -138,20 +138,20 @@ export default function TigerGallery() {
         ))}
       </div>
 
-      {/* Clean React Modal */}
+      {/* Viewport-Locked Dead-Centered Modal Component */}
       <Modal isOpen={!!activeLightBox} onClose={() => setActiveLightBox(null)}>
         {activeLightBox && (
           <div>
-            <div className="relative h-60 sm:h-72 md:h-80 w-full bg-black overflow-hidden">
+            <div className="relative h-56 sm:h-64 md:h-72 w-full bg-black overflow-hidden flex-shrink-0">
               <img
                 src={activeLightBox.image_url}
                 alt={activeLightBox.title}
                 className="w-full h-full object-cover object-center"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
             </div>
 
-            <div className="p-6 space-y-4 bg-zinc-950 text-white">
+            <div className="p-5 md:p-6 space-y-3.5 bg-zinc-950 text-white">
               <div className="flex flex-wrap justify-between items-center gap-2">
                 <span className="text-[10px] uppercase font-extrabold text-black bg-orange-500 px-2.5 py-0.5 rounded-full tracking-wider">
                   {activeLightBox.park} Sanctuary
@@ -163,11 +163,11 @@ export default function TigerGallery() {
                 {activeLightBox.title}
               </h3>
               
-              <p className="text-xs md:text-sm text-zinc-400 font-light leading-relaxed">
+              <p className="text-xs md:text-sm text-zinc-400 font-light line-clamp-2 leading-relaxed">
                 {activeLightBox.caption}
               </p>
 
-              <div className="pt-2">
+              <div className="pt-1">
                 <Link
                   href={`/booking?park=${encodeURIComponent(
                     activeLightBox.park.includes("National Park") 
