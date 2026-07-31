@@ -13,25 +13,30 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #000000;
-    color: #ffffff;
+    background-color: #070907;
+    color: #f4f4f5;
   }
 
-  /* Hardware GPU Layer Promotion for 120Hz Smoothness */
+  /* GPU Hardware Acceleration for 120Hz Smoothness */
   .gpu-layer {
     transform: translateZ(0);
     will-change: transform, opacity;
     backface-visibility: hidden;
   }
 
-  /* Forest Green & Tiger Glow Utility */
-  .forest-card {
-    background-color: #09090b;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Custom Editorial Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
-
-  .forest-card:hover {
-    border-color: rgba(255, 122, 0, 0.5);
-    box-shadow: 0 10px 30px -10px rgba(255, 122, 0, 0.15);
+  ::-webkit-scrollbar-track {
+    background: #070907;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ff9a00;
   }
 }

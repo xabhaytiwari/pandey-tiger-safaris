@@ -11,7 +11,7 @@ import LiveSightingTicker from "../components/ui/LiveSightingTicker";
 import ZoneGuide from "../components/sections/ZoneGuide";
 import AnimatedCounter from "../components/ui/AnimatedCounter";
 import { fetchFromAPI } from "../lib/api";
-import { Compass, Sparkles, ArrowRight, Car, Users, Zap, Trees, ShieldCheck } from "lucide-react";
+import { Compass, Sparkles, ArrowRight, Car, Users, Zap } from "lucide-react";
 
 export default function Home() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -53,13 +53,13 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white overflow-x-hidden">
+    <main className="min-h-screen bg-[#070907] text-white overflow-x-hidden">
       <LiveSightingTicker />
 
-      {/* Hero Section with Dual Forest Green & Tiger Orange Ambient Glow */}
+      {/* Hero Section */}
       <section className="relative w-screen left-1/2 right-1/2 -mx-[50vw] pt-28 pb-20 md:pt-36 md:pb-28 flex flex-col items-center text-center overflow-hidden min-h-[85vh] justify-center">
         
-        {/* Full-Bleed Autoplay Background Image */}
+        {/* Full-Bleed Autoplay Background */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.img
@@ -74,9 +74,8 @@ export default function Home() {
             />
           </AnimatePresence>
 
-          {/* Gradient Masks */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#070907] via-[#070907]/40 to-[#070907]/75" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#070907]/80 via-transparent to-[#070907]" />
         </div>
 
         {/* Hero Content */}
@@ -86,46 +85,38 @@ export default function Home() {
           animate="visible"
           className="relative z-10 space-y-8 max-w-5xl mx-auto px-6"
         >
-          {/* Badges: Forest Green + Tiger Orange */}
-          <motion.div variants={itemVariants} className="flex flex-wrap gap-2 justify-center">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-extrabold uppercase tracking-widest backdrop-blur-xl shadow-lg shadow-orange-500/10">
-              <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" /> Owner Operated • Dinesh Pandey (+91 9425331205)
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-bold backdrop-blur-xl">
-              <Trees className="w-4 h-4 text-emerald-400" /> MP Forest Dept Authorized
+          <motion.div variants={itemVariants} className="inline-flex">
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-extrabold uppercase tracking-widest backdrop-blur-xl shadow-lg shadow-amber-500/10">
+              <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" /> Business Owner • Dinesh Pandey (+91 9425331205)
             </span>
           </motion.div>
 
-          {/* Main Title with Typewriter Sound & Park Names Animation */}
           <motion.h1 variants={itemVariants} className="text-5xl md:text-8xl font-black tracking-tight text-balance leading-none">
             Unleash the Wild in <br className="hidden md:block" />
             <TypewriterHero />
           </motion.h1>
 
-          {/* Description */}
           <motion.p variants={itemVariants} className="text-zinc-200 text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed drop-shadow-md">
             Spearheaded by business owner Dinesh Pandey (+91 9425331205). Complete tour packages, luxury transport (Innova Crysta, Force Traveller, Swift Dzire), and an army of licensed safari guides on demand.
           </motion.p>
 
-          {/* Call-to-Actions */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
-              <Link href="/booking" className="w-full sm:w-auto px-9 py-4 bg-orange-500 text-black font-black text-sm rounded-full hover:bg-orange-400 transition-all flex items-center justify-center gap-2.5 shadow-xl shadow-orange-500/25">
+              <Link href="/booking" className="w-full sm:w-auto px-9 py-4 bg-amber-500 text-black font-black text-sm rounded-full hover:bg-amber-400 transition-all flex items-center justify-center gap-2.5 shadow-xl shadow-amber-500/25">
                 <Compass className="w-5 h-5" /> Book Safari Now
               </Link>
             </motion.div>
 
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
               <Link href="/custom-package" className="w-full sm:w-auto px-9 py-4 bg-zinc-900/90 border border-white/20 text-white font-bold text-sm rounded-full hover:bg-zinc-800 transition-all flex items-center justify-center gap-2.5 backdrop-blur-xl">
-                Custom Safari Request <ArrowRight className="w-4 h-4 text-orange-500" />
+                Custom Safari Request <ArrowRight className="w-4 h-4 text-amber-400" />
               </Link>
             </motion.div>
           </motion.div>
 
-          {/* Stats Banner */}
           <motion.div variants={itemVariants} className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto border-t border-white/10 text-center">
             <div>
-              <p className="text-orange-500"><AnimatedCounter value={20} suffix="+" /></p>
+              <p className="text-amber-400"><AnimatedCounter value={20} suffix="+" /></p>
               <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">Years Experience</p>
             </div>
             <div>
@@ -133,7 +124,7 @@ export default function Home() {
               <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">MP Tiger Parks</p>
             </div>
             <div>
-              <p className="text-3xl font-black text-orange-500">Fleet</p>
+              <p className="text-3xl font-black text-amber-400">Fleet</p>
               <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mt-1">Innova / Traveller</p>
             </div>
             <div>
@@ -147,39 +138,37 @@ export default function Home() {
       {/* Safari Zone Guide */}
       <ZoneGuide />
 
-      {/* Royal Bengal Tiger Photography Showcase */}
+      {/* Royal Bengal Tiger Photography Portfolio */}
       <div className="max-w-6xl mx-auto px-4">
         <TigerGallery />
       </div>
 
-      {/* Guest Testimonials Marquee */}
       <ReviewMarquee reviews={reviews} />
 
-      {/* Real Owner & Fleet Slideshow */}
       <div className="max-w-6xl mx-auto py-12 px-4">
         <GallerySlideshow />
       </div>
 
-      {/* Bento Grid Section */}
+      {/* Bento Grid */}
       <section className="max-w-6xl mx-auto py-16 px-4">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-xs font-mono uppercase tracking-widest text-orange-500 mb-8 text-center font-bold flex items-center justify-center gap-1.5"
+          className="text-xs font-mono uppercase tracking-widest text-amber-400 mb-8 text-center font-bold flex items-center justify-center gap-1.5"
         >
-          <Zap className="w-4 h-4 text-orange-500" /> Engineered for Wildlife Pursuits
+          <Zap className="w-4 h-4 text-amber-400" /> Engineered for Wildlife Pursuits
         </motion.h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.01 }} transition={{ duration: 0.3 }} className="md:col-span-2">
-            <Link href="/packages" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
+            <Link href="/packages" className="group block bg-zinc-950 border border-white/10 hover:border-amber-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
               <div className="space-y-3 z-10">
-                <span className="text-xs font-extrabold text-orange-500 uppercase tracking-widest bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">Featured Itineraries</span>
-                <h3 className="text-3xl font-black text-white group-hover:text-orange-500 transition-colors">Bandhavgarh & MP Tour Packages</h3>
+                <span className="text-xs font-extrabold text-amber-400 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">Featured Itineraries</span>
+                <h3 className="text-3xl font-black text-white group-hover:text-amber-400 transition-colors">Bandhavgarh & MP Tour Packages</h3>
                 <p className="text-zinc-400 text-sm max-w-md font-light leading-relaxed">3-Day & 4-Day complete travel packages including 4x4 open safari permits, luxury resort stays, and pickup transfers priced in INR (₹).</p>
               </div>
-              <div className="z-10 flex items-center gap-2 text-xs font-extrabold text-orange-500 pt-6">
+              <div className="z-10 flex items-center gap-2 text-xs font-extrabold text-amber-400 pt-6">
                 Explore All Packages <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
               </div>
               <div className="absolute right-0 bottom-0 opacity-25 group-hover:opacity-45 transition-opacity">
@@ -189,22 +178,22 @@ export default function Home() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.02 }} transition={{ duration: 0.3 }}>
-            <Link href="/fleet" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
+            <Link href="/fleet" className="group block bg-zinc-950 border border-white/10 hover:border-amber-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[320px] shadow-2xl">
               <div className="space-y-4 z-10">
-                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                   <Car className="w-6 h-6" />
                 </div>
                 <h3 className="text-2xl font-bold text-white">Luxury Vehicle Fleet</h3>
                 <p className="text-zinc-400 text-xs font-light leading-relaxed">Innova Crysta, Force Traveller, Swift Dzire & Open 4x4 Gypsies.</p>
               </div>
-              <div className="z-10 text-xs font-extrabold text-orange-500 flex items-center gap-1.5 pt-6">
+              <div className="z-10 text-xs font-extrabold text-amber-400 flex items-center gap-1.5 pt-6">
                 View Fleet <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1.5 transition-transform" />
               </div>
             </Link>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.02 }} transition={{ duration: 0.3 }}>
-            <Link href="/about" className="group block bg-zinc-950 border border-white/10 hover:border-orange-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
+            <Link href="/about" className="group block bg-zinc-950 border border-white/10 hover:border-amber-500/60 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
               <div className="space-y-4 z-10">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-950 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                   <Users className="w-6 h-6" />
@@ -219,13 +208,13 @@ export default function Home() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -8, scale: 1.01 }} transition={{ duration: 0.3 }} className="md:col-span-2">
-            <Link href="/custom-package" className="group block bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-orange-500/30 hover:border-orange-500/70 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
+            <Link href="/custom-package" className="group block bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-amber-500/30 hover:border-amber-500/70 rounded-3xl p-8 transition-all relative overflow-hidden flex flex-col justify-between min-h-[280px] shadow-2xl">
               <div className="space-y-3 z-10">
-                <span className="text-xs font-extrabold text-orange-500 uppercase tracking-widest bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">Tailor-Made Expeditions</span>
+                <span className="text-xs font-extrabold text-amber-400 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">Tailor-Made Expeditions</span>
                 <h3 className="text-3xl font-black text-white">Bespoke Travel Requests</h3>
                 <p className="text-zinc-400 text-sm max-w-md font-light leading-relaxed">Have a specific budget or transport request? Submit custom requirements directly to business owner Dinesh Pandey.</p>
               </div>
-              <div className="z-10 text-xs font-extrabold text-orange-500 flex items-center gap-1.5 pt-6">
+              <div className="z-10 text-xs font-extrabold text-amber-400 flex items-center gap-1.5 pt-6">
                 Submit Custom Request <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1.5 transition-transform" />
               </div>
             </Link>
