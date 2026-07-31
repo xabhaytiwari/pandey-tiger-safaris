@@ -29,7 +29,6 @@ export default function SightingMap() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  // Sighting Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLatLng, setSelectedLatLng] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsDetected, setGpsDetected] = useState(false);
@@ -84,6 +83,7 @@ export default function SightingMap() {
     }
   }, []);
 
+  // Initialize Clean White OpenStreetMap (CartoDB Positron Light Tiles)
   const initMap = () => {
     if (!window.L || mapInstanceRef.current) return;
 
@@ -95,7 +95,8 @@ export default function SightingMap() {
       zoomControl: true,
     });
 
-    window.L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    // Clean White Tile Layer
+    window.L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 18,
     }).addTo(map);
@@ -116,10 +117,11 @@ export default function SightingMap() {
   useEffect(() => {
     if (mapInstanceRef.current && PARK_COORDINATES[selectedPark]) {
       const coords = PARK_COORDINATES[selectedPark];
-      mapInstanceRef.current.flyTo([coords.lat, coords.lng], coords.zoom, { duration: 1.5 });
+      mapInstanceRef.current.setView([coords.lat, coords.lng], coords.zoom);
     }
   }, [selectedPark]);
 
+  // Color-Code Circles Based on Time Elapsed
   useEffect(() => {
     if (!window.L || !markersGroupRef.current) return;
 
@@ -129,18 +131,32 @@ export default function SightingMap() {
       (s) => !s.park_name || s.park_name === selectedPark
     );
 
+    const now = Date.now();
+
     parkSightings.forEach((s) => {
       if (s.lat && s.lng) {
+        // Calculate Time Elapsed
+        const createdAtMs = s.createdAt?.seconds ? s.createdAt.seconds * 1000 : now;
+        const hoursAgo = (now - createdAtMs) / (1000 * 60 * 60);
+
+        // Dynamic Time-Based Circle Color
+        let circleColor = "#ff3b30"; // Red (< 2 hours ago)
+        if (hoursAgo >= 2 && hoursAgo < 12) {
+          circleColor = "#ff9500"; // Amber (2 - 12 hours ago)
+        } else if (hoursAgo >= 12) {
+          circleColor = "#5856d6"; // Blue/Purple (> 12 hours ago)
+        }
+
         window.L.circle([s.lat, s.lng], {
-          color: "#ff7a00",
-          fillColor: "#ff7a00",
-          fillOpacity: 0.35,
+          color: circleColor,
+          fillColor: circleColor,
+          fillOpacity: 0.45,
           radius: 800,
         }).addTo(markersGroupRef.current);
 
         const popupContent = `
           <div style="font-family: Arial, sans-serif; padding: 6px; color: #000;">
-            <strong style="color: #ea580c; font-size: 13px;">🐅 Tiger Sighting</strong><br/>
+            <strong style="color: ${circleColor}; font-size: 13px;">🐅 Tiger Sighting</strong><br/>
             <span style="font-size: 11px; font-weight: bold;">${s.description || "Royal Bengal Tiger Spotted"}</span><br/>
             <span style="font-size: 10px; color: #666;">Zone: ${s.zone_name || "Core Zone"} (${s.safari_slot || "Morning"})</span><br/>
             <span style="font-size: 9px; color: #888;">Reported by: ${s.user_name || "Safari Guest"}</span>
@@ -152,7 +168,6 @@ export default function SightingMap() {
     });
   }, [sightings, selectedPark]);
 
-  // LIVE GPS EXTRACTOR: Device Satellite Geolocation (navigator.geolocation)
   const handleDetectLiveGps = () => {
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
       alert("Satellite Geolocation is not supported by your browser.");
@@ -177,7 +192,7 @@ export default function SightingMap() {
         setIsModalOpen(true);
 
         if (mapInstanceRef.current) {
-          mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.5 });
+          mapInstanceRef.current.setView([lat, lng], 14);
         }
       },
       (error) => {
@@ -192,7 +207,6 @@ export default function SightingMap() {
     );
   };
 
-  // PHOTO EXIF GPS EXTRACTOR
   const handlePhotoAutoMark = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -217,7 +231,7 @@ export default function SightingMap() {
       setIsModalOpen(true);
 
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.flyTo([gps.lat, gps.lng], 14, { duration: 1.5 });
+        mapInstanceRef.current.setView([gps.lat, gps.lng], 14);
       }
     } else {
       alert("No EXIF GPS location found in photo. Defaulting to center of " + selectedPark + ". Tap on the map to set location.");
@@ -266,7 +280,7 @@ export default function SightingMap() {
 
   return (
     <div className="space-y-6">
-      {/* Location Extractor Top Action Bar */}
+      {/* Location Extractor Bar */}
       <div className="bg-zinc-950 border border-orange-500/30 p-4 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 flex-shrink-0">
@@ -279,7 +293,6 @@ export default function SightingMap() {
         </div>
 
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto justify-end">
-          {/* 1. Live Device Satellite GPS Button */}
           <button
             type="button"
             onClick={handleDetectLiveGps}
@@ -287,10 +300,9 @@ export default function SightingMap() {
             className="bg-orange-500 hover:bg-orange-400 text-black font-extrabold px-5 py-2.5 rounded-full text-xs transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 whitespace-nowrap active:scale-95 disabled:opacity-50"
           >
             <Crosshair className="w-4 h-4" />
-            {isGpsLoading ? "Acquiring Satellite GPS..." : "Use My Live GPS"}
+            {isGpsLoading ? "Acquiring GPS..." : "Use My Live GPS"}
           </button>
 
-          {/* 2. Photo EXIF GPS Button */}
           <label className="bg-zinc-900 border border-white/15 hover:bg-zinc-800 text-white font-bold px-5 py-2.5 rounded-full text-xs transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap active:scale-95">
             <Upload className="w-4 h-4 text-orange-500" /> Photo EXIF GPS
             <input type="file" accept="image/jpeg,image/jpg" onChange={handlePhotoAutoMark} className="hidden" />
@@ -318,17 +330,20 @@ export default function SightingMap() {
         ))}
       </div>
 
-      {/* Map Container */}
-      <div className="relative bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
+      {/* Clean White Map Container */}
+      <div className="relative bg-white border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
         <div id="tiger-sightings-map" className="w-full h-[520px] z-10" />
 
-        <div className="absolute top-4 left-4 z-20 bg-black/80 backdrop-blur-md border border-white/10 p-3 rounded-2xl text-xs text-white max-w-xs space-y-1">
+        {/* Floating Instruction Banner & Legend */}
+        <div className="absolute top-4 left-4 z-20 bg-black/90 backdrop-blur-md border border-white/10 p-3.5 rounded-2xl text-xs text-white max-w-xs space-y-2">
           <p className="font-extrabold text-orange-400 flex items-center gap-1">
             <Flame className="w-4 h-4 text-orange-500" /> Click Map, Live GPS, or Photo
           </p>
-          <p className="text-[11px] text-zinc-400 leading-snug">
-            Tap anywhere in {selectedPark}, click &quot;Use My Live GPS&quot;, or upload a photo to update the live heat map!
-          </p>
+          <div className="flex flex-col gap-1 text-[11px] font-semibold pt-1 border-t border-white/10">
+            <span className="flex items-center gap-1.5 text-red-400"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Fresh Sighting (&lt; 2h ago)</span>
+            <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Recent Sighting (2 - 12h ago)</span>
+            <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Past Sighting (&gt; 12h ago)</span>
+          </div>
         </div>
       </div>
 
