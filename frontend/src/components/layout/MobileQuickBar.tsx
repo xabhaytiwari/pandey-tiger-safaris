@@ -8,7 +8,6 @@ import { triggerHaptic } from "../../lib/sound";
 export default function MobileQuickBar() {
   const pathname = usePathname();
 
-  // Hide on admin page to keep admin clean
   if (pathname?.startsWith("/admin")) return null;
 
   const quickLinks = [
@@ -20,7 +19,7 @@ export default function MobileQuickBar() {
   ];
 
   return (
-    <div className="lg:hidden fixed bottom-4 left-4 right-4 z-[95] pointer-events-none">
+    <div className="lg:hidden fixed bottom-11 left-4 right-4 z-[85] pointer-events-none">
       <div className="pointer-events-auto bg-black/90 backdrop-blur-2xl border border-white/15 rounded-full p-2 flex items-center justify-around shadow-2xl shadow-orange-500/10">
         {quickLinks.map((item) => {
           const Icon = item.icon;

@@ -14,12 +14,15 @@ export default function BottomStatusTicker() {
   ];
 
   return (
-    <div className="bg-black border-t border-white/10 py-3 overflow-hidden backdrop-blur-xl relative z-40">
+    <div className="fixed bottom-0 left-0 right-0 z-[80] w-full bg-black/80 backdrop-blur-2xl border-t border-white/15 py-2.5 overflow-hidden shadow-[0_-8px_32px_rgba(0,0,0,0.7)] pointer-events-auto">
+      {/* Top Liquid Glass Glow Hairline */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-500/60 to-transparent" />
+
       <div className="flex w-full overflow-hidden">
         <motion.div
           animate={{ x: ["0%", "-50%"] }}
           transition={{ repeat: Infinity, duration: 28, ease: "linear" }}
-          className="flex gap-8 whitespace-nowrap text-xs font-mono font-bold text-zinc-400"
+          className="flex gap-8 whitespace-nowrap text-[11px] font-mono font-bold text-zinc-300"
         >
           {[...tickerItems, ...tickerItems].map((item, i) => (
             <span key={i} className="flex items-center gap-3">
