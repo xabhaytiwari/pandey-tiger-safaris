@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, LogIn, UserPlus } from "lucide-react";
 import { 
@@ -20,6 +21,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: any) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,7 +38,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: any) {
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted || typeof document === "undefined") return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,10 +92,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: any) {
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence mode="wait">
-      <div className="fixed inset-0 z-[999999]">
-        {/* Backdrop */}
+      {/* Highest Z-Index z-[9999999] so Sign-In opens in front of all other cards & maps */}
+      <div className="fixed inset-0 z-[9999999] overflow-y-auto">
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
@@ -98,24 +104,24 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: any) {
             triggerHaptic(10);
             onClose();
           }}
-          className="fixed inset-0 bg-black/85 backdrop-blur-2xl" 
+          className="fixed inset-0 bg-black/90 backdrop-blur-2xl cursor-pointer" 
         />
 
-        {/* Viewport-Locked Centering Container (100dvh x 100vw) */}
-        <div className="fixed top-0 left-0 w-screen h-[100dvh] flex items-center justify-center p-4 pointer-events-none">
+        <div className="flex min-h-full items-center justify-center p-4 text-center">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }} 
-            animate={{ opacity: 1, scale: 1 }} 
-            exit={{ opacity: 0, scale: 0.95 }} 
+            initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            exit={{ opacity: 0, scale: 0.95, y: 10 }} 
             transition={{ type: "spring", stiffness: 450, damping: 30 }}
-            className="pointer-events-auto relative z-10 w-full max-w-md max-h-[85vh] overflow-y-auto bg-zinc-950 border border-white/15 rounded-3xl p-6 md:p-8 text-white shadow-2xl text-left"
+            className="pointer-events-auto relative z-10 w-full max-w-md max-h-[85vh] overflow-y-auto bg-zinc-950 border border-white/15 rounded-3xl p-6 md:p-8 text-white shadow-2xl text-left my-8"
           >
             <button 
+              type="button"
               onClick={() => {
                 triggerHaptic(10);
                 onClose();
               }} 
-              className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2 rounded-full active:scale-95 transition-all"
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2 rounded-full active:scale-95 transition-all cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -205,6 +211,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: any) {
           </motion.div>
         </div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

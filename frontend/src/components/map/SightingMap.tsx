@@ -61,7 +61,6 @@ export default function SightingMap() {
     return () => unsub();
   }, []);
 
-  // Real-time Firestore sync
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "sightings"), (snapshot) => {
       const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -71,7 +70,6 @@ export default function SightingMap() {
     return () => unsub();
   }, []);
 
-  // Synchronous SVG Gradient Injector
   const ensureGradientsInDom = (map: any) => {
     try {
       const svg = map.getPanes().overlayPane.querySelector("svg");
@@ -165,6 +163,11 @@ export default function SightingMap() {
       maxZoom: 18,
     }).addTo(map);
 
+    // Instant Tile Load Event Listener
+    tileLayerRef.current.on("load", () => {
+      ensureGradientsInDom(map);
+    });
+
     markersGroupRef.current = window.L.layerGroup().addTo(map);
 
     map.on("click", (e: any) => {
@@ -189,6 +192,10 @@ export default function SightingMap() {
         attribution: mapStyle === "satellite" ? "Tiles &copy; Esri &mdash; Source: Esri, Maxar" : "&copy; OpenStreetMap",
         maxZoom: 18,
       }).addTo(mapInstanceRef.current);
+
+      tileLayerRef.current.on("load", () => {
+        if (mapInstanceRef.current) ensureGradientsInDom(mapInstanceRef.current);
+      });
     }
   }, [mapStyle]);
 
@@ -199,7 +206,6 @@ export default function SightingMap() {
     }
   }, [selectedPark]);
 
-  // Render Sightings with Synchronous SVG Gradient Injection
   useEffect(() => {
     if (!window.L || !markersGroupRef.current) return;
 

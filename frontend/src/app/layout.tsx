@@ -6,6 +6,7 @@ import Footer from "../components/layout/Footer";
 import WhatsAppConcierge from "../components/ui/WhatsAppConcierge";
 import CursorGlow from "../components/ui/CursorGlow";
 import ScrollProgress from "../components/ui/ScrollProgress";
+import MobileQuickBar from "../components/layout/MobileQuickBar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -77,8 +78,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ScrollProgress />
         <CursorGlow />
         <Navbar />
-        {/* Increased Top Padding to Prevent Header Overlap */}
-        <div className="pt-24 md:pt-28">{children}</div>
+        <div className="pt-24 md:pt-28 pb-16 lg:pb-0">{children}</div>
+        <MobileQuickBar />
         <WhatsAppConcierge />
         <Footer />
       </body>
