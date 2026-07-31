@@ -7,6 +7,7 @@ import WhatsAppConcierge from "../components/ui/WhatsAppConcierge";
 import CursorGlow from "../components/ui/CursorGlow";
 import ScrollProgress from "../components/ui/ScrollProgress";
 import MobileQuickBar from "../components/layout/MobileQuickBar";
+import BottomStatusTicker from "../components/ui/BottomStatusTicker";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -79,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CursorGlow />
         <Navbar />
         <div className="pt-24 md:pt-28 pb-16 lg:pb-0">{children}</div>
+        <BottomStatusTicker />
         <MobileQuickBar />
         <WhatsAppConcierge />
         <Footer />
