@@ -71,13 +71,44 @@ export default function SightingMap() {
     return () => unsub();
   }, []);
 
-  // Auto-refresh map data 1 second after loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      handleManualRefresh();
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+  // Synchronous SVG Gradient Injector
+  const ensureGradientsInDom = (map: any) => {
+    try {
+      const svg = map.getPanes().overlayPane.querySelector("svg");
+      if (!svg) return;
+
+      let defs = svg.querySelector("defs");
+      if (!defs) {
+        defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        defs.id = "leaflet-svg-defs";
+        svg.insertBefore(defs, svg.firstChild);
+      }
+
+      defs.innerHTML = `
+        <radialGradient id="grad-fresh" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FF2D55" stop-opacity="0.85" />
+          <stop offset="45%" stop-color="#FF5E00" stop-opacity="0.55" />
+          <stop offset="85%" stop-color="#FF9500" stop-opacity="0.25" />
+          <stop offset="100%" stop-color="#FF2D55" stop-opacity="0.0" />
+        </radialGradient>
+
+        <radialGradient id="grad-recent" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FF9500" stop-opacity="0.75" />
+          <stop offset="50%" stop-color="#FF2D55" stop-opacity="0.35" />
+          <stop offset="85%" stop-color="#FF9500" stop-opacity="0.15" />
+          <stop offset="100%" stop-color="#FF9500" stop-opacity="0.0" />
+        </radialGradient>
+
+        <radialGradient id="grad-past" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#5856D6" stop-opacity="0.55" />
+          <stop offset="60%" stop-color="#5856D6" stop-opacity="0.20" />
+          <stop offset="100%" stop-color="#5856D6" stop-opacity="0.0" />
+        </radialGradient>
+      `;
+    } catch (e) {
+      // Ignore
+    }
+  };
 
   const handleManualRefresh = async () => {
     triggerHaptic(12);
@@ -116,43 +147,6 @@ export default function SightingMap() {
     }
   }, []);
 
-  const injectSvgGradients = (map: any) => {
-    try {
-      const svg = map.getPanes().overlayPane.querySelector("svg");
-      if (!svg) return;
-
-      let defs = svg.querySelector("defs");
-      if (!defs) {
-        defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-        svg.insertBefore(defs, svg.firstChild);
-      }
-
-      defs.innerHTML = `
-        <radialGradient id="grad-fresh" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#FF2D55" stop-opacity="0.85" />
-          <stop offset="45%" stop-color="#FF5E00" stop-opacity="0.55" />
-          <stop offset="85%" stop-color="#FF9500" stop-opacity="0.25" />
-          <stop offset="100%" stop-color="#FF2D55" stop-opacity="0.0" />
-        </radialGradient>
-
-        <radialGradient id="grad-recent" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#FF9500" stop-opacity="0.75" />
-          <stop offset="50%" stop-color="#FF2D55" stop-opacity="0.35" />
-          <stop offset="85%" stop-color="#FF9500" stop-opacity="0.15" />
-          <stop offset="100%" stop-color="#FF9500" stop-opacity="0.0" />
-        </radialGradient>
-
-        <radialGradient id="grad-past" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#5856D6" stop-opacity="0.55" />
-          <stop offset="60%" stop-color="#5856D6" stop-opacity="0.20" />
-          <stop offset="100%" stop-color="#5856D6" stop-opacity="0.0" />
-        </radialGradient>
-      `;
-    } catch (e) {
-      // Ignore
-    }
-  };
-
   const initMap = () => {
     if (!window.L || mapInstanceRef.current) return;
 
@@ -182,7 +176,7 @@ export default function SightingMap() {
     });
 
     mapInstanceRef.current = map;
-    injectSvgGradients(map);
+    ensureGradientsInDom(map);
   };
 
   useEffect(() => {
@@ -205,12 +199,13 @@ export default function SightingMap() {
     }
   }, [selectedPark]);
 
+  // Render Sightings with Synchronous SVG Gradient Injection
   useEffect(() => {
     if (!window.L || !markersGroupRef.current) return;
 
     markersGroupRef.current.clearLayers();
     if (mapInstanceRef.current) {
-      injectSvgGradients(mapInstanceRef.current);
+      ensureGradientsInDom(mapInstanceRef.current);
     }
 
     const now = Date.now();
@@ -495,7 +490,7 @@ export default function SightingMap() {
           <div className="flex flex-col gap-1 text-[11px] font-semibold pt-1 border-t border-white/10">
             <span className="flex items-center gap-1.5 text-red-400"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Fresh Sighting (&lt; 2h ago • 1.2km)</span>
             <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Recent Sighting (2-12h ago • 3.8km)</span>
-            <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Past Range (&lt; 24h ago • 8.5km)</span>
+            <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Past Sighting (&lt; 24h ago • 8.5km)</span>
           </div>
         </div>
       </div>
